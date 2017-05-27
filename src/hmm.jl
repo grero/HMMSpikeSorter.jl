@@ -37,50 +37,46 @@ function logsumexpl{T<:Real}(X::Array{T,1},i=1)
      end
 end
 
-function forward(V::Array{Float64,1},pp::Array{Float64,1}, A::Array{Float64,2}, μ::Array{Float64,1}, σ::Float64)
+function forward(V::Array{Float64,1},lpp::Array{Float64,1}, lA::Array{Float64,2}, μ::Array{Float64,1}, σ::Float64)
     T = length(V)
-    nstates = size(A,1)
+    nstates = size(lA,1)
     a = zeros(nstates, T)
     for i=1:nstates
-        a[i,1] = pp[i]*func(V[1],μ[i], σ)
+        a[i,1] = lpp[i] + funcl(V[1],μ[i], σ)
     end
     aa = 0.0
-    Z = 0.0
     for i=2:T
-        Z = 0.0
         for j=1:nstates
-            b = func(V[i], μ[j], σ)
-            aa = 0.0
+            b = funcl(V[i], μ[j], σ)
+            aa = -Inf
             for k=1:nstates
-                aa += a[k,i-1]*A[k,j]
+                #aa += a[k,i-1]*A[k,j]
+                if isfinite(lA[k,j]) #ignore impossible transtions
+                    aa = logsumexpl(aa, a[k,i-1] + lA[k,j])
+                end
             end
-            a[j,i] = b*aa
-            Z += a[j,i]
+            a[j,i] = b+aa
         end
     end
     return a
 end
 
-function backward(V::Array{Float64,1},A::Array{Float64,2}, μ::Array{Float64,1}, σ::Float64)
+function backward(V::Array{Float64,1},lA::Array{Float64,2}, μ::Array{Float64,1}, σ::Float64)
     T = length(V)
-    nstates = size(A,1)
-    a = ones(nstates, T)
+    nstates = size(lA,1)
+    a = zeros(nstates, T)
     aa = 0.0
-    Z = 0.0
     for i=T-1:-1:1
-        Z = 0.0
         for j=1:nstates
-            aa = 0.0
+            aa = -Inf 
             for k=1:nstates
-                b = func(V[i+1], μ[k], σ)
-                aa += a[k,i+1]*A[j,k]*b
+                if isfinite(lA[j,k])
+                    b = funcl(V[i+1], μ[k], σ)
+                    aa = logsumexpl(aa, a[k,i+1] + lA[j,k]+ b)
+                end
             end
-            a[j,i] = aa + eps()
-            Z += a[j,i]
+            a[j,i] = aa
         end
-        #for j=1:nstates
-        #    a[j,i] /= Z
-        #end
     end
     return a
 end
@@ -104,63 +100,100 @@ function fgamma(α,β,A,μ,σ,x)
 end
 
 
-function update(α, β, A, μ, σ, x)
-	nstates = size(A,1)
+function update(α, β, lA, μ, σ, x)
+	nstates = size(lA,1)
 	γf = zeros(nstates, length(x))
 	ξ = zeros(nstates, nstates, length(x))
 	for t in 1:length(x)
-		g = 0.0
+		g = -Inf 
 		for j in 1:nstates
-			g += α[j,t]*β[j,t] 
+            g = logsumexpl(g, α[j,t]+β[j,t] )
 		end
 		for j in 1:nstates
-			γf[j,t] = α[j,t]*β[j,t]/g
+			γf[j,t] = α[j,t] + β[j,t] - g
 		end
 	end
+    println(all(isfinite(γf)))
 	for t in 1:length(x) - 1
-		q = 0.0
+		q = -Inf
 		for j in 1:nstates
 			for i in 1:nstates
-                q += α[j,t]*A[j,i]*β[i,t+1]*func(x[t+1],μ[i],σ)
+                if isfinite(lA[j,i]) #ignore impossible transitions
+                    q = logsumexpl(q, α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ))
+                end
 			end
 		end
 		for j in 1:nstates
 			for i in 1:nstates
-                ξ[i,j,t] = α[j,t]*A[j,i]*β[i,t+1]*func(x[t+1],μ[i],σ)
+                if isfinite(lA[j,i])
+                    ξ[i,j,t] = α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ) - q
+                end
 			end
 		end
 	end
 	#TODO: Check this
 	#Anew = squeeze(sum(ξ[:,:,1:end-1],3)./sum(γf[:,1:end-1],3),3)
-    Anew = squeeze(sum(ξ[:,:,1:end-1],3),3)./squeeze(sum(γf[:,1:end-1],2),2)
-	#renormalize
-	Anew = Anew./sum(Anew,2)
+    Anew = log(eye(nstates))
+    Anew[1,1] = -Inf
+    for t in 1:length(x)-1
+        #for i in 1:nstates
+        #    for j in 1:nstates
+        #        Anew[j,i] = logsumexpl(Anew[j,i], ξ[j,i,t])
+        #    end
+        #end
+        Anew[1,1] = logsumexpl(Anew[1,1], ξ[1,1,t])
+    end
+
+    bb = zeros(nstates)
+    for t in 1:length(x)-1
+        for i in 1:nstates
+            bb[i] = logsumexpl(bb[i], γf[i,t])
+        end
+    end
+    println(Anew[1,1])
+    #for i in 1:nstates
+        #for j in 1:nstates
+        #    Anew[j,i] -= bb[j]
+        #end
+    #end
+    Anew[1,1] -= bb[1]
+    Anew[1,2] = log1p(-exp(Anew[1,1])) #compute log(1-exp(a))
+    Anew[end,1] = 0.0 
+    Anew[end,end] = -Inf
+
 	#TODO: Check if this actually works
 	_σ = zeros(μ)
-	gg = zeros(μ)
+    gg = log(zeros(μ))
 	for j in 1:nstates
-		x1 = 0.0
-		x2 = 0.0
+		x1 = -Inf
+		x2 = -Inf
 		for t in 1:length(x)
-			x1 += γf[j,t]*x[t]
-			x2 += γf[j,t]*x[t]*x[t]
-			gg[j] += γf[j,t]
+            #convert to log-normal
+            _x = x[t]
+            eγf = exp(γf[j,t])
+            x1 = logsumexpl(x1, eγf+_x)
+            x2 = logsumexpl(x1, eγf+_x+_x)
+            gg[j] = logsumexpl(gg[j], γf[j,t])
 		end
-		μ[j] = x1./gg[j]
-		_σ[j] += x2./gg[j] - μ[j].*μ[j]
+        μ[j] = x1-gg[j]
+        _σ[j] = x2-gg[j]
 	end
-	σ = sqrt(sum(gg.*_σ)/sum(gg))
+    
+    σ = sqrt(sum(exp(gg).*_σ)/sum(exp(gg)))
 	#END TODO
-	γf[1,:][:], Anew, μ, σ
+    pp = γf[:,1]
+    pp, Anew, μ, σ
 end
 
-function train_model(X,nstates=2,nsteps=100)
-	aa = ones(nstates,nstates)./nstates
+function train_model(X,nstates=2,nsteps=100,callback::Function=x->nothing)
+    aa = prepA(1e-3,nstates)
 	pp = ones(nstates)./nstates
-	μ = zeros(nstates)
+	μ = randn(nstates)
 	σ = 1.0
 	for i in 1:nsteps
 		pp, aa, μ, σ = train_model(X, pp, aa, μ, σ)
+        callback(μ)
+        yield()
 	end
 	pp, aa, μ, σ
 end
