@@ -7,13 +7,13 @@ funcl(x, μ, σ) = (σ2 = σ*σ; dd=x-μ;-0.5*log(2*pi*σ2) - dd*dd/(2*σ2))
 Computes log(x+y) in a numerically stable way
 """
 function logsumexp(x,y)
-   z = 0.0
    xp = log(x)
    yp = log(y)
    logsumexpl(xp, yp)
 end
 
 function logsumexpl(xp,yp)
+   z = 0.0
    if xp > yp
       z = xp + log1p(exp(yp-xp))
    else
