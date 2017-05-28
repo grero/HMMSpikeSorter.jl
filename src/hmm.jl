@@ -143,6 +143,7 @@ function update(α, β, lA, μ, σ, x)
 	#TODO: Check this
 	#Anew = squeeze(sum(ξ[:,:,1:end-1],3)./sum(γf[:,1:end-1],3),3)
     Anew = log(eye(nstates))
+    Anew = log(diagm(ones(nstates-1),1))
     Anew[1,1] = -Inf
     for t in 1:length(x)-1
         #for i in 1:nstates
