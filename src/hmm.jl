@@ -197,9 +197,9 @@ end
 
 function train_model(X,nstates=2,nsteps=100,callback::Function=x->nothing)
     aa = prepA(1e-3,nstates)
-	pp = ones(nstates)./nstates
-	μ = randn(nstates)
-	σ = 1.0
+    pp = log(ones(nstates)./nstates)
+    μ = exp(randn(nstates))
+	σ = 0.1
 	for i in 1:nsteps
 		pp, aa, μ, σ = train_model(X, pp, aa, μ, σ)
         callback(μ)
