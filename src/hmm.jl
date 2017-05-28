@@ -4,6 +4,15 @@ func(x, μ, σ) = (σ2 = σ*σ; dd=x-μ;exp(-dd*dd/(2*σ2))/sqrt(2*pi*σ2))
 funcl(x, μ, σ) = (σ2 = σ*σ; dd=x-μ;-0.5*log(2*pi*σ2) - dd*dd/(2*σ2))
 
 """
+Logpdf of log-normal distribution
+"""
+function func2l(x,μ, σ) 
+    σ2 = σ*σ
+    dd = log(x) - μ
+    return -0.5*log(2*pi*σ2) - log(x) - dd*dd/(2*σ2)
+end
+
+"""
 Computes log(x+y) in a numerically stable way
 """
 function logsumexp(x,y)
@@ -42,12 +51,12 @@ function forward(V::Array{Float64,1},lpp::Array{Float64,1}, lA::Array{Float64,2}
     nstates = size(lA,1)
     a = zeros(nstates, T)
     for i=1:nstates
-        a[i,1] = lpp[i] + funcl(V[1],μ[i], σ)
+        a[i,1] = lpp[i] + func2l(V[1],μ[i], σ)
     end
     aa = 0.0
     for i=2:T
         for j=1:nstates
-            b = funcl(V[i], μ[j], σ)
+            b = func2l(V[i], μ[j], σ)
             aa = -Inf
             for k=1:nstates
                 #aa += a[k,i-1]*A[k,j]
@@ -71,7 +80,7 @@ function backward(V::Array{Float64,1},lA::Array{Float64,2}, μ::Array{Float64,1}
             aa = -Inf 
             for k=1:nstates
                 if isfinite(lA[j,k])
-                    b = funcl(V[i+1], μ[k], σ)
+                    b = func2l(V[i+1], μ[k], σ)
                     aa = logsumexpl(aa, a[k,i+1] + lA[j,k]+ b)
                 end
             end
@@ -113,20 +122,20 @@ function update(α, β, lA, μ, σ, x)
 			γf[j,t] = α[j,t] + β[j,t] - g
 		end
 	end
-    println(all(isfinite(γf)))
+    #println(all(isfinite(γf)))
 	for t in 1:length(x) - 1
 		q = -Inf
 		for j in 1:nstates
 			for i in 1:nstates
                 if isfinite(lA[j,i]) #ignore impossible transitions
-                    q = logsumexpl(q, α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ))
+                    q = logsumexpl(q, α[j,t]+lA[j,i]+β[i,t+1]+func2l(x[t+1],μ[i],σ))
                 end
 			end
 		end
 		for j in 1:nstates
 			for i in 1:nstates
                 if isfinite(lA[j,i])
-                    ξ[i,j,t] = α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ) - q
+                    ξ[i,j,t] = α[j,t]+lA[j,i]+β[i,t+1]+func2l(x[t+1],μ[i],σ) - q
                 end
 			end
 		end
@@ -169,16 +178,16 @@ function update(α, β, lA, μ, σ, x)
 		x2 = -Inf
 		for t in 1:length(x)
             #convert to log-normal
-            _x = x[t]
-            eγf = exp(γf[j,t])
+            _x = log(x[t])
+            #eγf = exp(γf[j,t])
+            eγf = γf[j,t]
             x1 = logsumexpl(x1, eγf+_x)
-            x2 = logsumexpl(x1, eγf+_x+_x)
-            gg[j] = logsumexpl(gg[j], γf[j,t])
+            x2 = logsumexpl(x2, eγf+_x+_x)
+            gg[j] = logsumexpl(gg[j], eγf)
 		end
-        μ[j] = x1-gg[j]
-        _σ[j] = x2-gg[j]
+        μ[j] = exp(x1-gg[j]) # the log of the mean of the log-normal distributed variable
+        _σ[j] = exp(x2-gg[j]) - μ[j]*μ[j]
 	end
-    
     σ = sqrt(sum(exp(gg).*_σ)/sum(exp(gg)))
 	#END TODO
     pp = γf[:,1]
