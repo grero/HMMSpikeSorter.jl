@@ -1,6 +1,3 @@
-using Distributions
-include("utils.jl")
-
 function viterbi{T<:Real}(y::Array{T,1}, p::Number, mu::Array{Float64,1}, C::Number)
     nstates = length(mu)
     A = prepA(p,nstates)

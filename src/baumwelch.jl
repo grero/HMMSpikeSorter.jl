@@ -1,6 +1,3 @@
-using Distributions
-include("utils.jl")
-
 function forward(V::Array{Float64,1},lpp::Array{Float64,1}, lA::Array{Float64,2}, μ::Array{Float64,1}, σ::Float64)
     T = length(V)
     nstates = size(lA,1)
@@ -115,7 +112,6 @@ function update(α, β, lA, μ, σ, x)
             bb[i] = logsumexpl(bb[i], γf[i,t])
         end
     end
-    println(Anew[1,1])
     #for i in 1:nstates
         #for j in 1:nstates
         #    Anew[j,i] -= bb[j]
