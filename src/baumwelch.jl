@@ -22,6 +22,35 @@ function forward(V::Array{Float64,1},lpp::Array{Float64,1}, lA::Array{Float64,2}
     return a
 end
 
+function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
+    T = length(V)
+    nstates = lA.nstates
+    a = fill(-Inf,nstates, T)
+    for i in 1:nstates
+        a[i,1] = lA.π[i]
+        ss = lA.states[:,i]
+        for j in 1:lA.N
+            a[i,1] += func2l(V[1],μ[ss[j],j], σ)
+        end
+    end
+    states = lA.states
+    N = lA.N
+    for i=2:T
+        v = V[i]
+        for qq in lA.transitions
+            j = qq[1]
+            k = qq[2]
+            lp = qq[3]
+            b = 0.0
+            for l in 1:N
+                b += func2l(v, μ[states[l,j],l], σ)
+            end
+            a[j,i] = logsumexpl(a[j,i], a[k,i-1] + lp + b)
+        end
+    end
+    a
+end
+
 function backward(V::Array{Float64,1},lA::Array{Float64,2}, μ::Array{Float64,1}, σ::Float64)
     T = length(V)
     nstates = size(lA,1)
@@ -40,6 +69,29 @@ function backward(V::Array{Float64,1},lA::Array{Float64,2}, μ::Array{Float64,1}
         end
     end
     return a
+end
+
+function backward(V::Array{Float64,1},lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
+    T = length(V)
+    nstates = lA.nstates
+    K = lA.K
+    N = lA.N
+    states = lA.states
+    a = zeros(nstates, T)
+    for i in T-1:-1:1
+        v = V[i+1]
+        for qq in lA.transitions
+            j = qq[1]
+            k = qq[2]
+            lp = qq[3]
+            b = 0.0
+            for l in 1:N
+                b += func2l(v, μ[states[l,k], l], σ)
+            end
+            a[j,i] = logsumexpl(a[j,i], a[k, i+1] + lp + b)
+        end
+    end
+    a
 end
 
 function fgamma(α,β,A,μ,σ,x)
