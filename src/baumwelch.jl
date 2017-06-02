@@ -198,6 +198,78 @@ function update(α, β, lA, μ, σ, x)
     pp, Anew, μ, σ
 end
 
+##UNTESTED##
+function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64, x::Array{Float64,1})
+    nstates = lA.nstates
+    N = lA.N
+    K = lA.K
+    γf = zeros(nstates, length(x))
+	for t in 1:length(x)
+		g = -Inf
+		for j in 1:nstates
+            g = logsumexpl(g, α[j,t]+β[j,t] )
+		end
+		for j in 1:nstates
+			γf[j,t] = α[j,t] + β[j,t] - g
+		end
+	end
+    #update transition matrix; the only non-determnisitc transitions are from noise (state 0) to active for each neuron
+    ξ = zeros(lA.N, length(x))
+    sidx = find(sum(lA.states,1).==1) #find these transition states for each neuron
+    for t in 1:length(x)-1
+        _x = x[t+1]
+        for i in 1:length(sidx)
+            j = sidx[i]
+            tidx = findifrst(x->x[1]==1 && x[2]==j, lA.transitions)
+            lp = lA.transitions[tidx][3]
+            ξ[i,t] = α[1,t]  + lp + β[j,t+1] + func2l(_x, μ[j],σ)
+        end
+    end
+    q = -Inf
+    for _x in ξ
+        q = logsumexpl(q, _x)
+    end
+    ξ .-= q #normalize
+    bb = 0.0
+    xx = zeros(N)
+    for t in 1:length(x)-1
+        bb = logsumexpl(bb, γf[1,t]) #only need the silent state here
+        for j in 1:N
+            xx[j] = logsumexpl(xx[j],ξ[j,t])
+        end
+    end
+    #update the transition matrix with the new transitions
+    pp = γf[:,1]
+    lA_new = StateMatrix(lA.states+1, pp, K, xx-bb)
+	_σ = zeros(μ)
+    gg = log(zeros(μ))
+	for j in 1:nstates
+		x1 = -Inf
+		x2 = -Inf
+        #only look at states where a single neuron is active
+        aidx =  find(lA.states[:,j].>=2)
+        if length(aidx) == 1
+            _aidx = aidx[1]
+            ss = lA.states[_aidx,j]
+            for t in 1:length(x)
+                #convert to log-normal
+                _x = log(x[t])
+                #eγf = exp(γf[j,t])
+                eγf = γf[j,t]
+                x1 = logsumexpl(x1, eγf+_x)
+                x2 = logsumexpl(x2, eγf+_x+_x)
+                gg[ss,aidx] = logsumexpl(gg[ss,_aidx], eγf)
+            end
+            μ[ss,_aidx] = exp(x1-gg[ss,_aidx]) # the log of the mean of the log-normal distributed variable
+            _σ[ss,_aidx] = exp(x2-gg[ss,_aidx]) - μ[ss,_aidx]*μ[ss,_aidx]
+        end
+	end
+    σ = sqrt(sum(exp(gg).*_σ)/sum(exp(gg)))
+	#END TODO
+    pp = γf[:,1]
+    pp, lA, μ, σ
+end
+
 function train_model(X,nstates=2,nsteps=100,callback::Function=x->nothing)
     aa = prepA(1e-3,nstates)
     pp = log(ones(nstates)./nstates)
