@@ -266,27 +266,32 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
 	end
     σ = sqrt(sum(exp(gg).*_σ)/sum(exp(gg)))
 	#END TODO
-    pp = γf[:,1]
-    pp, lA, μ, σ
+    lA, μ, σ
 end
 
-function train_model(X,nstates=2,nsteps=100,callback::Function=x->nothing)
-    aa = prepA(1e-3,nstates)
-    pp = log(ones(nstates)./nstates)
-    μ = exp(randn(nstates))
-	σ = 0.1
+function train_model(X,N=3,K=60, resolve_overlaps=false, nsteps=100,callback::Function=x->nothing)
+    lp = log(fill(0.1, N))
+    state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
+    μ = exp(randn(K,N))
+    σ = log(0.1)
 	for i in 1:nsteps
-		pp, aa, μ, σ = train_model(X, pp, aa, μ, σ)
+		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ)
         callback(μ)
         yield()
 	end
-	pp, aa, μ, σ
+	state_matrix, μ, σ
 end
 
 function train_model(X,pp0, aa0, μ0, σ0)
 	α = forward(X, pp0, aa0, μ0, σ0)
 	β = backward(X, aa0, μ0, σ0)
 	pp,aa,μ,σ = update(α, β, aa0, μ0, σ0, X)
+end
+
+function train_model(X,state_matrix, μ0, σ0)
+	α = forward(X, state_matrix, μ0, σ0)
+	β = backward(X, state_matrix, μ0, σ0)
+	state_matrix,μ,σ = update(α, β, state_matrix, μ0, σ0, X)
 end
 
 function decode()
