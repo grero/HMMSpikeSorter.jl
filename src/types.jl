@@ -5,10 +5,17 @@ type StateMatrix
     K::Int64 #number of neurons
     N::Int64 #number of states per neuron
     nstates::Int64
+    resolve_overlaps::Bool
 end
 
+StateMatrix(states,transitions, Π, K, N, nstates) = StateMatrix(states, transitions, Π, K, N, nstates, true)
+
 function generate_states(N,K,allow_overlaps=true)
-    states = zeros(Int64,N,1+N*(K-1) + N*(N-1)*(K-1)*(K-1))
+    if allow_overlaps
+        states = zeros(Int64,N,1+N*(K-1) + N*(N-1)*(K-1)*(K-1))
+    else
+        states = zeros(Int64,N,1+N*(K-1))
+    end
     k = 2
     for i in 1:N
         for k1 in 1:K-1
@@ -16,16 +23,18 @@ function generate_states(N,K,allow_overlaps=true)
             k += 1
         end
     end
-    for i in 1:N
-       for j in 1:N
-           if i==j
-               continue
-           end
-           for k1 in 1:K-1
-               for k2 in 1:K-1
-                   states[i,k] = k1
-                   states[j,k] = k2
-                   k += 1
+    if allow_overlaps
+        for i in 1:N
+           for j in 1:N
+               if i==j
+                   continue
+               end
+               for k1 in 1:K-1
+                   for k2 in 1:K-1
+                       states[i,k] = k1
+                       states[j,k] = k2
+                       k += 1
+                   end
                end
            end
        end
@@ -68,7 +77,7 @@ function get_valid_transitions(states::Array{Int64,2}, K,lp)
 end
 
 
-function StateMatrix(states::Array{Int64,2},pp::Array{Float64,1}, K,lp)
+function StateMatrix(states::Array{Int64,2},pp::Array{Float64,1}, K,lp;allow_overlaps=true)
     transitions = get_valid_transitions(states,K,lp)
-    StateMatrix(states+1, transitions,pp, K,size(states,1),size(states,2))
+    StateMatrix(states+1, transitions,pp, K,size(states,1),size(states,2),allow_overlaps)
 end
