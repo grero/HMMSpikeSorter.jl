@@ -77,7 +77,8 @@ function backward(V::Array{Float64,1},lA::StateMatrix, μ::Array{Float64,2}, σ:
     K = lA.K
     N = lA.N
     states = lA.states
-    a = zeros(nstates, T)
+    a = log(zeros(nstates, T))
+    a[:,T] = 0.0
     for i in T-1:-1:1
         v = V[i+1]
         for qq in lA.transitions
