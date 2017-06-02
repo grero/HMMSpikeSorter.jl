@@ -52,7 +52,7 @@ function isvalid_transition(states,K,lp,j1,j2)
             lpt += log1p(-exp(lpi))
         elseif s1 == 0 && s2 == 1
             lpt += lpi
-        elseif (s2 - s1 == 1) || (s1 == K-1 && s1 == K-1)
+        elseif (s2 - s1 == 1) || (s1 == K-1 && s2 == 0)
             lpt += 0.0
         else #other transitions simply add 0.0
             lpt = -Inf #impossible transition
