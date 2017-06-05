@@ -44,12 +44,13 @@ end
 
 function isvalid_transition(states,K,lp,j1,j2)
     lpt = 0.0
+    lpz = log1p(-exp(sum(lp))) #probability of staying in the silent state
     for i in 1:size(states,1)
         s1 = states[i,j1]
         s2 = states[i,j2]
         lpi = lp[i]
         if s1 == s2 == 0
-            lpt += log1p(-exp(lpi))
+            lpt += lpz
         elseif s1 == 0 && s2 == 1
             lpt += lpi
         elseif (s2 - s1 == 1) || (s1 == K-1 && s2 == 0)
