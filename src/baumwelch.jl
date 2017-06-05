@@ -312,7 +312,7 @@ function train_model(X,N=3,K=60, resolve_overlaps=false, nsteps=100,callback::Fu
 	state_matrix, μ, σ
 end
 
-function train_model(X,pp0, aa0, μ0, σ0)
+function train_model_old(X,pp0, aa0, μ0, σ0)
 	α = forward(X, pp0, aa0, μ0, σ0)
 	β = backward(X, aa0, μ0, σ0)
 	pp,aa,μ,σ = update(α, β, aa0, μ0, σ0, X)
