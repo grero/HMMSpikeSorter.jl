@@ -3,12 +3,12 @@ function forward(V::Array{Float64,1},lpp::Array{Float64,1}, lA::Array{Float64,2}
     nstates = size(lA,1)
     a = zeros(nstates, T)
     for i=1:nstates
-        a[i,1] = lpp[i] + func2l(V[1],μ[i], σ)
+        a[i,1] = lpp[i] + funcl(V[1],μ[i], σ)
     end
     aa = 0.0
     for i=2:T
         for j=1:nstates
-            b = func2l(V[i], μ[j], σ)
+            b = funcl(V[i], μ[j], σ)
             aa = -Inf
             for k=1:nstates
                 #aa += a[k,i-1]*A[k,j]
@@ -30,7 +30,7 @@ function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
         a[i,1] = lA.π[i]
         ss = lA.states[:,i]
         for j in 1:lA.N
-            a[i,1] += func2l(V[1],μ[ss[j],j], σ)
+            a[i,1] += funcl(V[1],μ[ss[j],j], σ)
         end
     end
     states = lA.states
@@ -43,7 +43,7 @@ function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
             lp = qq[3]
             b = 0.0
             for l in 1:N
-                b += func2l(v, μ[states[l,j],l], σ)
+                b += funcl(v, μ[states[l,j],l], σ)
             end
             a[j,i] = logsumexpl(a[j,i], a[k,i-1] + lp + b)
         end
@@ -61,7 +61,7 @@ function backward(V::Array{Float64,1},lA::Array{Float64,2}, μ::Array{Float64,1}
             aa = -Inf
             for k=1:nstates
                 if isfinite(lA[j,k])
-                    b = func2l(V[i+1], μ[k], σ)
+                    b = funcl(V[i+1], μ[k], σ)
                     aa = logsumexpl(aa, a[k,i+1] + lA[j,k]+ b)
                 end
             end
@@ -87,7 +87,7 @@ function backward(V::Array{Float64,1},lA::StateMatrix, μ::Array{Float64,2}, σ:
             lp = qq[3]
             b = 0.0
             for l in 1:N
-                b += func2l(v, μ[states[l,k], l], σ)
+                b += funcl(v, μ[states[l,k], l], σ)
             end
             a[j,i] = logsumexpl(a[j,i], a[k, i+1] + lp + b)
         end
@@ -133,14 +133,14 @@ function update(α, β, lA, μ, σ, x)
 		for j in 1:nstates
 			for i in 1:nstates
                 if isfinite(lA[j,i]) #ignore impossible transitions
-                    q = logsumexpl(q, α[j,t]+lA[j,i]+β[i,t+1]+func2l(x[t+1],μ[i],σ))
+                    q = logsumexpl(q, α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ))
                 end
 			end
 		end
 		for j in 1:nstates
 			for i in 1:nstates
                 if isfinite(lA[j,i])
-                    ξ[i,j,t] = α[j,t]+lA[j,i]+β[i,t+1]+func2l(x[t+1],μ[i],σ) - q
+                    ξ[i,j,t] = α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ) - q
                 end
 			end
 		end
@@ -221,13 +221,13 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
         _x = x[t+1]
         lp = lA.transitions[1][3]
         #note μ[1,:] should be zero
-        ξ[1,t] = α[1,t] + lp + β[1,t+1] + func2l(_x, μ[1,1], σ)
+        ξ[1,t] = α[1,t] + lp + β[1,t+1] + funcl(_x, μ[1,1], σ)
         for i in 1:N
             j = sidx[i]
             #find the transition from states 1 to state j
             tidx = findfirst(q->q[1]==1 && q[2]==j, lA.transitions)
             lp = lA.transitions[tidx][3]
-            ξ[i+1,t] = α[1,t]  + lp + β[j,t+1] + func2l(_x, μ[lA.states[i,j],i],σ)
+            ξ[i+1,t] = α[1,t]  + lp + β[j,t+1] + funcl(_x, μ[lA.states[i,j],i],σ)
         end
         q = -Inf
         for i in 1:N+1
@@ -252,11 +252,11 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     #xb = min(0.0, xb)
     lA_new = StateMatrix(lA.states-1, pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
 	_σ = zeros(μ)
-    gg = log(zeros(μ))
+    gg = zeros(μ)
     x2 = 0.0
     qq = 0.0
 	for j in 1:nstates
-		x1 = -Inf
+		x1 = 0.0 
         #only look at states where a single neuron is active
         aidx =  find(lA.states[:,j].>=2)
         #FIXME: Check that the μ and σ are correctly computed
@@ -264,20 +264,20 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             _aidx = aidx[1]
             ss = lA.states[_aidx,j]
             for t in 1:length(x)
-                #convert to log-normal
-                _x = log(x[t])
+                _x = x[t]
                 #eγf = exp(γf[j,t])
                 eγf = γf[j,t]
-                x1 = logsumexpl(x1, eγf+_x)
-                gg[ss,_aidx] = logsumexpl(gg[ss,_aidx], eγf)
+                #x1 = logsumexpl(x1, eγf+_x)
+                x1 += _x*exp(eγf)
+                gg[ss,_aidx] += exp(eγf)
             end
             if ss > 1 #only upgade the mean for other states
-                μ[ss,_aidx] = exp(x1-gg[ss,_aidx]) # the log of the mean of the log-normal distributed variable
+                μ[ss,_aidx] = x1/gg[ss,_aidx]
             end
         end
         #upgrade variance; assumed equal for for all neurons and states
         for t in 1:length(x)
-            _x = log(x[t])
+            _x = x[t]
             eγf = γf[j,t]
             for i in 1:N
                 d = (x[t]-μ[lA.states[i,j],i])
@@ -295,9 +295,14 @@ end
 function train_model(X,N=3,K=60, resolve_overlaps=false, nsteps=100,callback::Function=x->nothing)
     lp = log(fill(0.1, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
-    μ = exp(randn(K,N))
-    μ[1,:] = 1.0 #all neurons must start from silence
-    σ = log(0.1)
+    #
+    μ = ones(K,N)
+    for i in 1:N
+        μ[:,i] = create_spike_template(K, rand(), rand(), rand())
+    end
+    #μ = exp(rand(K,N))
+    μ[1,:] = 0.0 #all neurons must start from silence
+    σ = 0.1
 	for i in 1:nsteps
         print("$i ")
 		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ)
