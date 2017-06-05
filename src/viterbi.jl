@@ -96,6 +96,50 @@ function viterbi(y::Array{Float64,1}, lA::Array{Float64,2}, lpp::Array{Float64,1
     return x,T2, T1
 end
 
+function viterbi(y::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
+    #straight forward implementation of the Viterbi algorithm
+    #assume gaussian emission probabilities
+    nstates = lA.nstates
+    N = lA.N
+    nobs = size(y,1)
+    x = zeros(Int16, nobs)
+    T1 = log(zeros(Float64, nstates, nobs))
+    T2 = zeros(Int16, nstates, nobs)
+    #define initial elements
+    for i=1:nstates
+        T1[i,1] = lA.π[i]
+        for j in 1:N
+            T1[i,1] += funcl(y[1], μ[lA.states[j,i],j], σ)
+        end
+    end
+    #T1[1,1] = 0
+    for i=2:nobs
+        for qq in lA.transitions
+            k = qq[1]
+            j = qq[2]
+            lp = qq[3]
+
+            q = 0.0
+            for l in 1:N
+                q += funcl(y[i], μ[lA.states[l,j],l], σ)
+            end
+            t = T1[k,i-1]+lp+q
+            if t > T1[j,i] 
+                T1[j,i] = t
+                T2[j,i] = k
+            end
+        end
+    end
+    #define the last state
+    #mx,x[end] = findmax(T1[:,end])
+    x[end] = 1
+    #run backward
+    for i=nobs:-1:2
+        x[i-1] = T2[x[i],i]
+    end
+    return x,T2, T1
+end
+
 function viterbi_2{T<:Real}(y::Array{T,1}, A::Array{Float64,2}, mu::Array{Float64,1}, C::Float64)
     #implementation tailor made for ring transition probabilities
     #assume gaussian emission probabilities
