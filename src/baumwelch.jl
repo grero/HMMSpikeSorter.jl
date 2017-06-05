@@ -200,7 +200,7 @@ function update(α, β, lA, μ, σ, x)
     pp, Anew, μ, σ
 end
 
-##DOESN'T WORK##
+##KIND OF  WORKS##
 function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64, x::Array{Float64,1})
     nstates = lA.nstates
     N = lA.N
@@ -228,7 +228,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             #find the transition from states 1 to state j
             tidx = findfirst(q->q[1]==1 && q[2]==j, lA.transitions)
             lp = lA.transitions[tidx][3]
-            ξ[i+1,t] = α[1,t]  + lp + β[j,t+1] + func2l(_x, μ[j,i],σ)
+            ξ[i+1,t] = α[1,t]  + lp + β[j,t+1] + func2l(_x, μ[lA.states[i,j],i],σ)
         end
         q = -Inf
         for i in 1:N+1
@@ -289,8 +289,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             _x = log(x[t])
             eγf = γf[j,t]
             for i in 1:N
-                #x2 = logsumexpl(x2, eγf+2*_x)
-                d = (x[t]-μ[j,i])
+                d = (x[t]-μ[lA.states[i,j],i])
                 x2 += d*d*exp(eγf) 
                 qq += exp(eγf)
             end
