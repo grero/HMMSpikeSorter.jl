@@ -287,7 +287,6 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
         end
 	end
     σ2 = x2/qq 
-    println(extrema(γf))
     σ = sqrt(σ2)
     lA_new, μ, σ
 end
