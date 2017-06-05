@@ -38,8 +38,8 @@ function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
     for i=2:T
         v = V[i]
         for qq in lA.transitions
-            j = qq[1]
-            k = qq[2]
+            k = qq[1]
+            j = qq[2]
             lp = qq[3]
             b = 0.0
             for l in 1:N
@@ -58,7 +58,7 @@ function backward(V::Array{Float64,1},lA::Array{Float64,2}, μ::Array{Float64,1}
     aa = 0.0
     for i=T-1:-1:1
         for j=1:nstates
-            aa = -Inf 
+            aa = -Inf
             for k=1:nstates
                 if isfinite(lA[j,k])
                     b = func2l(V[i+1], μ[k], σ)
@@ -119,7 +119,7 @@ function update(α, β, lA, μ, σ, x)
 	γf = zeros(nstates, length(x))
 	ξ = zeros(nstates, nstates, length(x))
 	for t in 1:length(x)
-		g = -Inf 
+		g = -Inf
 		for j in 1:nstates
             g = logsumexpl(g, α[j,t]+β[j,t] )
 		end
@@ -170,9 +170,10 @@ function update(α, β, lA, μ, σ, x)
         #    Anew[j,i] -= bb[j]
         #end
     #end
+    @show Anew[1,1], bb
     Anew[1,1] -= bb[1]
     Anew[1,2] = log1p(-exp(Anew[1,1])) #compute log(1-exp(a))
-    Anew[end,1] = 0.0 
+    Anew[end,1] = 0.0
     Anew[end,end] = -Inf
 
 	#TODO: Check if this actually works
@@ -199,7 +200,7 @@ function update(α, β, lA, μ, σ, x)
     pp, Anew, μ, σ
 end
 
-##UNTESTED##
+##DOESN'T WORK##
 function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64, x::Array{Float64,1})
     nstates = lA.nstates
     N = lA.N
@@ -215,40 +216,56 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
 		end
 	end
     #update transition matrix; the only non-determnisitc transitions are from noise (state 0) to active for each neuron
-    ξ = zeros(lA.N, length(x))
-    sidx = find(sum(lA.states,1).==1) #find these transition states for each neuron
+    sidx = find(sum(lA.states.==2,1).==1) #find these transition states for each neuron
+    ξ = zeros(lA.N+1, length(x)-1)
     for t in 1:length(x)-1
         _x = x[t+1]
-        for i in 1:length(sidx)
+        lp = lA.transitions[1][3]
+        #note μ[1,:] should be zero
+        ξ[1,t] = α[1,t] + lp + β[1,t+1] + func2l(_x, μ[1,1], σ)
+        for i in 1:N
             j = sidx[i]
-            tidx = findifrst(x->x[1]==1 && x[2]==j, lA.transitions)
+            #find the transition from states 1 to state j
+            tidx = findfirst(q->q[1]==1 && q[2]==j, lA.transitions)
             lp = lA.transitions[tidx][3]
-            ξ[i,t] = α[1,t]  + lp + β[j,t+1] + func2l(_x, μ[j],σ)
+            ξ[i+1,t] = α[1,t]  + lp + β[j,t+1] + func2l(_x, μ[j,i],σ)
+        end
+        q = -Inf
+        for i in 1:N+1
+            q = logsumexpl(q, ξ[i,t])
+        end
+        for i in 1:N+1
+            ξ[i,t] -= q
         end
     end
-    q = -Inf
-    for _x in ξ
-        q = logsumexpl(q, _x)
-    end
-    ξ .-= q #normalize
-    bb = 0.0
-    xx = zeros(N)
+    #println(extrema(sum(exp(ξ),1)))
+    #println(extrema(sum(exp(γf),1)))
+    #println(γf[:,1])
+    #println(ξ[:,1])
+    bb = -Inf
+    xx = log(zeros(N+1))
     for t in 1:length(x)-1
-        bb = logsumexpl(bb, γf[1,t]) #only need the silent state here
-        for j in 1:N
+        bb = logsumexpl(bb, γf[1,t]) #we need only the silent state
+        for j in 1:N+1
             xx[j] = logsumexpl(xx[j],ξ[j,t])
         end
     end
     #update the transition matrix with the new transitions
     pp = γf[:,1]
-    lA_new = StateMatrix(lA.states+1, pp, K, xx-bb)
+    @show xx, bb
+    xb = xx-bb #FIXME: This does not work!
+    #the problem here is that xx is usually higher than bb, which means that we see more transitions out of a given state than we see occupations of that state. This is clearly non-sensical, and indicates a bug somewhere.
+    #xb = min(0.0, xb)
+    lA_new = StateMatrix(lA.states-1, pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
 	_σ = zeros(μ)
     gg = log(zeros(μ))
+    x2 = 0.0
+    qq = 0.0
 	for j in 1:nstates
 		x1 = -Inf
-		x2 = -Inf
         #only look at states where a single neuron is active
         aidx =  find(lA.states[:,j].>=2)
+        #FIXME: Check that the μ and σ are correctly computed
         if length(aidx) == 1
             _aidx = aidx[1]
             ss = lA.states[_aidx,j]
@@ -258,28 +275,50 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
                 #eγf = exp(γf[j,t])
                 eγf = γf[j,t]
                 x1 = logsumexpl(x1, eγf+_x)
-                x2 = logsumexpl(x2, eγf+_x+_x)
-                gg[ss,aidx] = logsumexpl(gg[ss,_aidx], eγf)
+                gg[ss,_aidx] = logsumexpl(gg[ss,_aidx], eγf)
             end
-            μ[ss,_aidx] = exp(x1-gg[ss,_aidx]) # the log of the mean of the log-normal distributed variable
-            _σ[ss,_aidx] = exp(x2-gg[ss,_aidx]) - μ[ss,_aidx]*μ[ss,_aidx]
+            if ss > 1 #only upgade the mean for other states
+                μ[ss,_aidx] = exp(x1-gg[ss,_aidx]) # the log of the mean of the log-normal distributed variable
+            end
+            #μ[ss,_aidx] = x1/exp(gg[ss,_aidx])
+            #_σ[ss, _aidx] = exp(x2-gg[ss,_aidx]) - μ[ss, _aidx]*μ[ss,_aidx]
+            #@show _σ[ss, _aidx]
+        end
+        #upgrade variance; assumed equal for for all neurons and states
+        for t in 1:length(x)
+            _x = log(x[t])
+            eγf = γf[j,t]
+            for i in 1:N
+                #x2 = logsumexpl(x2, eγf+2*_x)
+                d = (x[t]-μ[j,i])
+                x2 += d*d*exp(eγf) 
+                qq += exp(eγf)
+            end
         end
 	end
-    σ = sqrt(sum(exp(gg).*_σ)/sum(exp(gg)))
+    σ2 = x2/qq 
+    println(extrema(γf))
+    #σ2 = sum(exp(gg).*_σ)/sum(exp(gg))
+    #σ2 = exp(x2)
+    println(σ2)
+    σ = sqrt(σ2)
 	#END TODO
-    lA, μ, σ
+    lA_new, μ, σ
 end
 
 function train_model(X,N=3,K=60, resolve_overlaps=false, nsteps=100,callback::Function=x->nothing)
     lp = log(fill(0.1, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
     μ = exp(randn(K,N))
+    μ[1,:] = 1.0 #all neurons must start from silence
     σ = log(0.1)
 	for i in 1:nsteps
+        print("$i ")
 		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ)
         callback(μ)
         yield()
 	end
+    println()
 	state_matrix, μ, σ
 end
 
@@ -328,4 +367,15 @@ function simulate(pp, aa, μ, σ,n)
 		states[i] = state
 	end
 	X,states
+end
+
+function test(S,lp, lA,μ, σ)
+    lAl = prepA(exp(lp[1]),60)
+    α = forward(exp(S), lA.π, lAl, μ[:,1], σ);
+    β = backward(exp(S), lAl, μ[:,1], σ);
+    a = forward(exp(S), lA, μ[:,1:1], σ);
+    b = backward(exp(S), lA, μ[:,1:1], σ);
+    lAp, μp, σp = update(a, b, lA, μ[:,1:1], σ, exp(S))
+    ppn, lAn, μn, σn = update(α, β, lAl, μ[:,1], σ, exp(S))
+    lAp, lAn
 end
