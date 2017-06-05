@@ -170,7 +170,6 @@ function update(α, β, lA, μ, σ, x)
         #    Anew[j,i] -= bb[j]
         #end
     #end
-    @show Anew[1,1], bb
     Anew[1,1] -= bb[1]
     Anew[1,2] = log1p(-exp(Anew[1,1])) #compute log(1-exp(a))
     Anew[end,1] = 0.0
@@ -238,10 +237,6 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             ξ[i,t] -= q
         end
     end
-    #println(extrema(sum(exp(ξ),1)))
-    #println(extrema(sum(exp(γf),1)))
-    #println(γf[:,1])
-    #println(ξ[:,1])
     bb = -Inf
     xx = log(zeros(N+1))
     for t in 1:length(x)-1
@@ -252,7 +247,6 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     end
     #update the transition matrix with the new transitions
     pp = γf[:,1]
-    @show xx, bb
     xb = xx-bb #FIXME: This does not work!
     #the problem here is that xx is usually higher than bb, which means that we see more transitions out of a given state than we see occupations of that state. This is clearly non-sensical, and indicates a bug somewhere.
     #xb = min(0.0, xb)
@@ -280,9 +274,6 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             if ss > 1 #only upgade the mean for other states
                 μ[ss,_aidx] = exp(x1-gg[ss,_aidx]) # the log of the mean of the log-normal distributed variable
             end
-            #μ[ss,_aidx] = x1/exp(gg[ss,_aidx])
-            #_σ[ss, _aidx] = exp(x2-gg[ss,_aidx]) - μ[ss, _aidx]*μ[ss,_aidx]
-            #@show _σ[ss, _aidx]
         end
         #upgrade variance; assumed equal for for all neurons and states
         for t in 1:length(x)
@@ -297,11 +288,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
 	end
     σ2 = x2/qq 
     println(extrema(γf))
-    #σ2 = sum(exp(gg).*_σ)/sum(exp(gg))
-    #σ2 = exp(x2)
-    println(σ2)
     σ = sqrt(σ2)
-	#END TODO
     lA_new, μ, σ
 end
 
