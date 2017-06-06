@@ -1,5 +1,5 @@
 using Base.Test
-using HMM
+using HMMSpikeSorter
 srand(0)
 
 temp1 = HMM.create_spike_template(60,3.0, 0.8, 0.2)

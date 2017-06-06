@@ -1,4 +1,4 @@
-module HMM
+module HMMSpikeSorter
 using Distributions
 include("utils.jl")
 include("types.jl")
