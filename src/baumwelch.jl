@@ -280,7 +280,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             _x = x[t]
             eγf = γf[j,t]
             for i in 1:N
-                d = (x[t]-μ[lA.states[i,j],i])
+                d = _x-μ[lA.states[i,j],i]
                 x2 += d*d*exp(eγf) 
                 qq += exp(eγf)
             end
