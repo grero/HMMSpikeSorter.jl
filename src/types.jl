@@ -8,6 +8,28 @@ type StateMatrix
     resolve_overlaps::Bool
 end
 
+"""
+Get the transitions from noise to active for each neuron in `lA`.
+"""
+function get_lp(lA::StateMatrix)
+    lp = zeros(lA.N)
+    k = 1
+    for qq in lA.transitions
+        if qq[1] == 1 && qq[2]>1
+            vidx =  find(lA.states[:,qq[2]].>1)
+            if length(vidx) == 1 #only a single neuron active
+                lp[k] = qq[3]
+                if k == lA.N
+                    break
+                else
+                    k += 1
+                end
+            end
+        end
+    end
+    lp
+end
+
 StateMatrix(states,transitions, Π, K, N, nstates) = StateMatrix(states, transitions, Π, K, N, nstates, true)
 
 function generate_states(N,K,allow_overlaps=true)
