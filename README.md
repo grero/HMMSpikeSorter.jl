@@ -1,5 +1,8 @@
 Introduction
 -----------
+[![Build Status](https://travis-ci.org/grero/HMMSpikeSorter.jl.svg?branch=master)](https://travis-ci.org/grero/HMMSpikeSorter.jl)
+[![codecov](https://codecov.io/gh/grero/HMMSpikeSorter.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/grero/HMMSpikeSorter.jl)
+
 Spike sorting based on Hidden Markov Models. Based on ideas presented in Herbst, J. A., Gammeter, S., Ferrero, D., & Hahnloser, R. H. R. (2008). Spike sorting with hidden Markov models. Journal of Neuroscience Methods, 174(1), 126–134. http://doi.org/10.1016/j.jneumeth.2008.06.011
 
 Example
