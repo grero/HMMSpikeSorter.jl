@@ -20,8 +20,17 @@ function update_plot(x)
 end
 
 lA, μ, σ = HMMSpikeSorter.train_model(S, 3, 60, false, 10,update_plot)
-x,T2, T1 = HMMSpikeSorter.viterbi(S, lA, μ, σ)
-Y2 = HMMSpikeSorter.reconstruct_signal(x, lA, μ, σ)
+μ,uidx = HMMSpikeSorter.remove_small(μ, σ)
+qidx = setdiff(1:lA.N, uidx)
+lp,sidx = HMMSpikeSorter.get_lp(lA)
+pidx = find(x->all(lA.states[qidx,x].==1), 1:lA.nstates)
+lA2 = HMMSpikeSorter.StateMatrix(length(uidx), 60, lp[uidx], lA.π[pidx],lA.resolve_overlaps)
+
+lA2, μ_new, σ = HMMSpikeSorter.train_model(S, lA2, μ_new, σ)
+update_plot(μ_new)
+
+x,T2, T1 = HMMSpikeSorter.viterbi(S, lA2, μ_new, σ)
+Y2 = HMMSpikeSorter.reconstruct_signal(x, lA2, μ_new, σ)
 
 ax1[:plot](Y2;label="Reconstructed")
 
