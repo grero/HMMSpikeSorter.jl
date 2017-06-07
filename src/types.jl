@@ -101,10 +101,16 @@ function get_valid_transitions(states::Array{Int64,2}, K,lp)
     idx
 end
 
-function StateMatrix(N::Int64,K::Int64, lp::Array{Float64,1},allow_overlaps=true)
+function StateMatrix(N::Int64,K::Int64, lp::Array{Float64,1},allow_overlaps::Bool=true)
     states = generate_states(N,K,allow_overlaps)
     nstates = size(states,2)
     pp = log(ones(nstates)./nstates)
+    StateMatrix(states, pp, K, lp;allow_overlaps=allow_overlaps)
+end
+
+function StateMatrix(N::Int64,K::Int64, lp::Array{Float64,1},pp::Array{Float64,1}, allow_overlaps::Bool=true)
+    states = generate_states(N,K,allow_overlaps)
+    nstates = size(states,2)
     StateMatrix(states, pp, K, lp;allow_overlaps=allow_overlaps)
 end
 
