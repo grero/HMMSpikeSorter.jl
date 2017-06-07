@@ -88,7 +88,7 @@ Removes templates from `μ` that are significantly not different from noise at a
 
     function remove_small(μ::Array{Float64,2}, σ::Float64,α=0.05)
 """
-function remove_small(μ::Array{Float64,2}, σ::Float64,α=0.05)
+function remove_small(μ::Array{Float64,2}, σ::Float64, α=0.05)
     n = size(μ,1)
     σ2 = σ.*σ
     Z = sum(μ.^2,1)./σ2
@@ -96,6 +96,6 @@ function remove_small(μ::Array{Float64,2}, σ::Float64,α=0.05)
     pvals = 1-cdf(Chisq(n-1),Z)
     idx = find(pvals .< α)
     μ_new = μ[:,idx]
-    μ_new
+    μ_new, idx
 end
 
