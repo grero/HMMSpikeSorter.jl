@@ -13,12 +13,14 @@ Get the transitions from noise to active for each neuron in `lA`.
 """
 function get_lp(lA::StateMatrix)
     lp = zeros(lA.N)
+    lidx = fill(0,lA.N)
     k = 1
-    for qq in lA.transitions
+    for (i,qq) in enumerate(lA.transitions)
         if qq[1] == 1 && qq[2]>1
             vidx =  find(lA.states[:,qq[2]].>1)
             if length(vidx) == 1 #only a single neuron active
                 lp[k] = qq[3]
+                lidx[k] = i
                 if k == lA.N
                     break
                 else
@@ -27,7 +29,7 @@ function get_lp(lA::StateMatrix)
             end
         end
     end
-    lp
+    lp,lidx
 end
 
 StateMatrix(states,transitions, Π, K, N, nstates) = StateMatrix(states, transitions, Π, K, N, nstates, true)
