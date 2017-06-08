@@ -8,6 +8,13 @@ type StateMatrix
     resolve_overlaps::Bool
 end
 
+type HMMSpikingModel
+    state_matrix::StateMatrix
+    ml_seq::Array{Int64,1}
+    μ::Array{Float64,2}
+    σ::Float64
+end
+
 """
 Get the transitions from noise to active for each neuron in `lA`.
 """
