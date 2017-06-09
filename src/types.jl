@@ -1,5 +1,5 @@
 type StateMatrix
-    states::Array{Int64,2}
+    states::Array{Int16,2}
     transitions::Array{Tuple{Int64,Int64,Float64},1}
     π::Array{Float64,1}
     K::Int64 #number of neurons
@@ -10,7 +10,7 @@ end
 
 type HMMSpikingModel
     state_matrix::StateMatrix
-    ml_seq::Array{Int64,1}
+    ml_seq::Array{Int16,1}
     μ::Array{Float64,2}
     σ::Float64
 end
@@ -43,9 +43,9 @@ StateMatrix(states,transitions, Π, K, N, nstates) = StateMatrix(states, transit
 
 function generate_states(N,K,allow_overlaps=true)
     if allow_overlaps
-        states = zeros(Int64,N,1+N*(K-1) + N*(N-1)*(K-1)*(K-1))
+        states = zeros(Int16,N,1+N*(K-1) + N*(N-1)*(K-1)*(K-1))
     else
-        states = zeros(Int64,N,1+N*(K-1))
+        states = zeros(Int16,N,1+N*(K-1))
     end
     k = 2
     for i in 1:N
@@ -94,7 +94,7 @@ function isvalid_transition(states,K,lp,j1,j2)
     lpt
 end
 
-function get_valid_transitions(states::Array{Int64,2}, K,lp)
+function get_valid_transitions(states::Array{Int16,2}, K,lp)
     idx = Array{Tuple{Int64, Int64, Float64}}(0)
     nstates = size(states,2)
     for i in 1:nstates
@@ -121,7 +121,7 @@ function StateMatrix(N::Int64,K::Int64, lp::Array{Float64,1},pp::Array{Float64,1
     StateMatrix(states, pp, K, lp;allow_overlaps=allow_overlaps)
 end
 
-function StateMatrix(states::Array{Int64,2},pp::Array{Float64,1}, K,lp;allow_overlaps=true)
+function StateMatrix(states::Array{Int16,2},pp::Array{Float64,1}, K,lp;allow_overlaps=true)
     transitions = get_valid_transitions(states,K,lp)
     StateMatrix(states+1, transitions,pp, K,size(states,1),size(states,2),allow_overlaps)
 end
