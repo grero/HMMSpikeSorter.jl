@@ -216,6 +216,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
 	end
     #update transition matrix; the only non-determnisitc transitions are from noise (state 0) to active for each neuron
     tidx = find(q->q[1]==1, lA.transitions) #all transitions out of state 1
+    #Note: we can also have all neurons transitioning from silence to active
     ξ = zeros(length(tidx), length(x)-1)
     for t in 1:length(x)-1
         _x = x[t+1]
@@ -234,27 +235,31 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             ξ[i,t] = α[1,t]  + lp + β[j,t+1] + bb
         end
         q = -Inf
-        for i in 1:N+1
-            q = logsumexpl(q, ξ[i,t])
+        for qq in lA.transitions
+            bb = 0.0 
+            i = qq[1]
+            j = qq[2]
+            lp = qq[3]
+            for l in 1:N
+                bb += funcl(_x, μ[lA.states[l,j],l],σ)
+            end
+            q = logsumexpl(q,α[i,t]  + lp + β[j,t+1] + bb)
         end
-        for i in 1:N+1
+        for i in 1:size(ξ,1)
             ξ[i,t] -= q
         end
     end
     bb = -Inf
-    xx = log(zeros(N+1))
+    xx = log(zeros(size(ξ,1)))
     for t in 1:length(x)-1
         bb = logsumexpl(bb, γf[1,t]) #we need only the silent state
-        for j in 1:N+1
+        for j in 1:size(ξ,1)
             xx[j] = logsumexpl(xx[j],ξ[j,t])
         end
     end
     #update the transition matrix with the new transitions
     pp = γf[:,1]
-    xb = xx-bb #FIXME: This does not work!
-    @show xb
-    #the problem here is that xx is usually higher than bb, which means that we see more transitions out of a given state than we see occupations of that state. This is clearly non-sensical, and indicates a bug somewhere.
-    #xb = min(0.0, xb)
+    xb = xx-bb
     lA_new = StateMatrix(lA.states-1, pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
 	_σ = zeros(μ)
     gg = zeros(μ)
