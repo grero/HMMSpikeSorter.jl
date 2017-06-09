@@ -215,19 +215,23 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
 		end
 	end
     #update transition matrix; the only non-determnisitc transitions are from noise (state 0) to active for each neuron
-    sidx = find(sum(lA.states.==2,1).==1) #find these transition states for each neuron
-    ξ = zeros(lA.N+1, length(x)-1)
+    tidx = find(q->q[1]==1, lA.transitions) #all transitions out of state 1
+    ξ = zeros(length(tidx), length(x)-1)
     for t in 1:length(x)-1
         _x = x[t+1]
-        lp = lA.transitions[1][3]
         #note μ[1,:] should be zero
-        ξ[1,t] = α[1,t] + lp + β[1,t+1] + funcl(_x, μ[1,1], σ)
-        for i in 1:N
-            j = sidx[i]
+        #ξ[1,t] = α[1,t] + lp + β[1,t+1] + funcl(_x, μ[1,1], σ)
+        for i in 1:length(tidx)
+            #j = sidx[i]
             #find the transition from states 1 to state j
-            tidx = findfirst(q->q[1]==1 && q[2]==j, lA.transitions)
-            lp = lA.transitions[tidx][3]
-            ξ[i+1,t] = α[1,t]  + lp + β[j,t+1] + funcl(_x, μ[lA.states[i,j],i],σ)
+            #tidx = findfirst(q->q[1]==1 && q[2]==j, lA.transitions)
+            bb = 0.0 
+            j = lA.transitions[tidx[i]][2]
+            lp = lA.transitions[tidx[i]][3]
+            for l in 1:N
+                bb += funcl(_x, μ[lA.states[l,j],l],σ)
+            end
+            ξ[i,t] = α[1,t]  + lp + β[j,t+1] + bb
         end
         q = -Inf
         for i in 1:N+1
@@ -248,6 +252,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     #update the transition matrix with the new transitions
     pp = γf[:,1]
     xb = xx-bb #FIXME: This does not work!
+    @show xb
     #the problem here is that xx is usually higher than bb, which means that we see more transitions out of a given state than we see occupations of that state. This is clearly non-sensical, and indicates a bug somewhere.
     #xb = min(0.0, xb)
     lA_new = StateMatrix(lA.states-1, pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
