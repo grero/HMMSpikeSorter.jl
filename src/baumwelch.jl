@@ -291,7 +291,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     lA_new, μ, σ
 end
 
-function train_model(X,N=3,K=60, resolve_overlaps=false, nsteps=100,callback::Function=x->nothing;verbose::Integer=1)
+function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=100,callback::Function=x->nothing;verbose::Integer=1)
     lp = log(fill(0.1, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
     #
@@ -302,6 +302,10 @@ function train_model(X,N=3,K=60, resolve_overlaps=false, nsteps=100,callback::Fu
     #μ = exp(rand(K,N))
     μ[1,:] = 0.0 #all neurons must start from silence
     σ = 0.1
+    train_model(X, state_matrix, μ, σ, nsteps, callback;verbose=verbose)
+end
+
+function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Float64, nsteps::Integer,callback::Function=x->nothing;verbose::Integer=1)
 	for i in 1:nsteps
         if verbose > 0
             print("$i ")
