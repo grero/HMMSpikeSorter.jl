@@ -4,6 +4,9 @@ function StatsBase.fit(::Type{HMMSpikingModel}, X::Array{Float64,1}, N=3, K=60,n
     HMMSpikingModel(lA, x, μ, σ)
 end
 
+function StatsBase.fit!(model::HMMSpikingModel, X::Array{Float64,1}, callback::Function=x->nothing)
+end
+
 function StatsBase.predict(model::HMMSpikingModel)
     reconstruct_signal(model.ml_seq, model.state_matrix, model.μ, model.σ)
 end
