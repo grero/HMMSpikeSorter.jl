@@ -8,11 +8,19 @@ type StateMatrix
     resolve_overlaps::Bool
 end
 
-type HMMSpikingModel
+type HMMSpikeTemplateModel
     state_matrix::StateMatrix
-    ml_seq::Array{Int16,1}
     μ::Array{Float64,2}
     σ::Float64
+end
+
+type HMMSpikingModel
+    template_model::HMMSpikeTemplateModel
+    ml_seq::Array{Int16,1}
+end
+
+function HMMSpikingModel(lA::StateMatrix, ml_seq::Array{Int16,1}, μ::Array{Float64,2}, σ::Float64)
+    HMMSpikingModel(HMMSpikeTemplateModel(lA, μ,σ), ml_seq)
 end
 
 """
