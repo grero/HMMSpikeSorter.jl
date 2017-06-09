@@ -377,3 +377,28 @@ function test(S,lp, lA,μ, σ)
     ppn, lAn, μn, σn = update(α, β, lAl, μ[:,1], σ, exp(S))
     lAp, lAn
 end
+
+"""
+Removes templates from `μ` that are significantly not different from noise at a p-value of `α`.
+
+    function remove_small(μ::Array{Float64,2}, σ::Float64,α=0.05)
+"""
+function remove_small(μ::Array{Float64,2}, σ::Float64, lA::StateMatrix, α=0.05)
+    n = size(μ,1)
+    σ2 = σ.*σ
+    Z = sum(μ.^2,1)./σ2
+    #use the fact that Z is Χ² distributed with n-1 degress of freedom
+    pvals = 1-cdf(Chisq(n-1),Z)
+    idx = find(pvals .< α)
+    μ_new = μ[:,idx]
+    qidx = setdiff(1:lA.N,uidx)
+    lp,sidx = get_lp(lA)
+    pidx = find(x->all(lA.states[qidx,x].==1), 1:lA.nstates)
+    lA_new = StateMatrix(length(uidx), 60, lp[uidx], lA.π[pidx],lA.resolve_overlaps)
+    lA_new, μ_new, σ
+end
+
+function remove_small(templates::HMMSpikeTemplateModel, α=0.05)
+    lA_new, μ_new, σ = remove_small(templates.μ, templates.σ, templates.state_matrix)
+    HMMSpikeTemplateModel(lA_new, μ_new, σ)
+end
