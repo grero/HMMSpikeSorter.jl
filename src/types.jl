@@ -35,7 +35,7 @@ function get_lp(lA::StateMatrix)
             vidx =  find(lA.states[:,qq[2]].>1)
             if length(vidx) == 1 #only a single neuron active
                 lp[k] = qq[3]
-                lidx[k] = i
+                lidx[k] = first(vidx)
                 if k == lA.N
                     break
                 else
