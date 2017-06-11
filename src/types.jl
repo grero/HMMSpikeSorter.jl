@@ -17,7 +17,12 @@ end
 type HMMSpikingModel
     template_model::HMMSpikeTemplateModel
     ml_seq::Array{Int16,1}
+    ll::Float64
+    y::Array{Float64,1}
 end
+
+StatsBase.loglikelihood(model::HMMSpikingModel) = model.ll
+StatsBase.model_response(model::HMMSpikingModel) = model.y
 
 function HMMSpikingModel(lA::StateMatrix, ml_seq::Array{Int16,1}, μ::Array{Float64,2}, σ::Float64)
     HMMSpikingModel(HMMSpikeTemplateModel(lA, μ,σ), ml_seq)

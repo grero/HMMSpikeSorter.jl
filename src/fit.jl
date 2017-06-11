@@ -5,7 +5,12 @@ end
 
 function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  callback::Function=x->nothing)
     x,T2, T1 = viterbi(X, templates.state_matrix, templates.μ, templates.σ)
-    HMMSpikingModel(templates, x)
+    #compute log-likelihood
+    ll = 0.0
+    for i in 1:length(x)
+        ll += T1[x[i],i]
+    end
+    HMMSpikingModel(templates, x,ll,X)
 end
 
 function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::Array{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
