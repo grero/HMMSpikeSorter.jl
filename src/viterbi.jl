@@ -131,8 +131,7 @@ function viterbi(y::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
         end
     end
     #define the last state
-    #mx,x[end] = findmax(T1[:,end])
-    x[end] = 1
+    x[end] = indmax(T1[:,end])
     #run backward
     for i=nobs:-1:2
         x[i-1] = T2[x[i],i]
