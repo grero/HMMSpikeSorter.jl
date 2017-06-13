@@ -138,3 +138,13 @@ function StateMatrix(states::Array{Int16,2},pp::Array{Float64,1}, K,lp;allow_ove
     transitions = get_valid_transitions(states,K,lp)
     StateMatrix(states+1, transitions,pp, K,size(states,1),size(states,2),allow_overlaps)
 end
+
+"""
+Create a new HMMSpikeTemplateModel with templates `idx`. Optionally, alllow these templates to overlap by setting `resolve_overlaps` to `true`.
+"""
+function prune_templates(templates::HMMSpikeTemplateModel, idx::AbstractArray{Int64,1},resolve_overlaps=true)
+    lp, tidx = get_lp(templates.state_matrix)
+    N = length(idx)
+    lA = StateMatrix(N, templates.state_matrix.K, lp[findin(tidx,idx)],resolve_overlaps)
+    HMMSpikeTemplateModel(lA, templates.μ[:,idx], templates.σ)
+end
