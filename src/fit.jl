@@ -13,6 +13,29 @@ function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel
     HMMSpikingModel(templates, x,ll,X)
 end
 
+function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  chunksize::Integer, callback::Function=x->nothing)
+    i = 1
+    j = 1
+    n = length(X)
+    ml_seq = ones(Int16,n)
+    ll = 0.0
+    while j < n
+        j = min(i + chunksize-1,n)
+        k = j-i+1
+        x,T2, T1 = viterbi(view(X,i:j), templates.state_matrix, templates.μ, templates.σ)
+        while x[k] > 1
+            j -= 1
+            k -= 1
+        end
+        ml_seq[i:j] = x[1:k]
+        for i in 1:k
+            ll += T1[x[i],i]
+        end
+        i = j
+    end
+    HMMSpikingModel(templates, ml_seq, ll, X)
+end
+
 function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::Array{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
     lA, μ, σ = train_model(X, N, K, resolve_overlaps, nsteps, callback)
     HMMSpikeTemplateModel(lA, μ, σ)
