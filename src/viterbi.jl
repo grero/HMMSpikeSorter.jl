@@ -96,7 +96,7 @@ function viterbi(y::Array{Float64,1}, lA::Array{Float64,2}, lpp::Array{Float64,1
     return x,T2, T1
 end
 
-function viterbi(y::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
+function viterbi(y::AbstractArray{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
     #straight forward implementation of the Viterbi algorithm
     #assume gaussian emission probabilities
     nstates = lA.nstates
