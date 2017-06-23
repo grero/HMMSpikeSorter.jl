@@ -400,15 +400,20 @@ function remove_small(μ::Array{Float64,2}, σ::Float64, lA::StateMatrix, α=0.0
     #use the fact that Z is Χ² distributed with n-1 degress of freedom
     pvals = 1-cdf(Chisq(n-1),Z)
     idx = find(pvals .< α)
-    μ_new = μ[:,idx]
-    qidx = setdiff(1:lA.N,uidx)
-    lp,sidx = get_lp(lA)
-    pidx = find(x->all(lA.states[qidx,x].==1), 1:lA.nstates)
-    lA_new = StateMatrix(length(uidx), 60, lp[uidx], lA.π[pidx],lA.resolve_overlaps)
-    lA_new, μ_new, σ
 end
 
-function remove_small(templates::HMMSpikeTemplateModel, α=0.05)
-    lA_new, μ_new, σ = remove_small(templates.μ, templates.σ, templates.state_matrix)
-    HMMSpikeTemplateModel(lA_new, μ_new, σ)
+function remove_small(templates::HMMSpikeTemplateModel, α=0.05,resolve_overlaps=true)
+    idx = remove_small(templates.μ, templates.σ, templates.state_matrix)
+    prune_templates(templates, idx, resolve_overlaps)
+end
+
+function condense_templates(templates::HMMSpikeTemplateModel, α=0.05)
+    N = templates.state_matrix.N
+    K = templates.state_matrix.K
+    for i1 in 1:N-1
+        for i2 in i1+1:N
+            #align templates
+            #compute θ = sum((t1-t2)Y2/σ
+        end
+    end
 end
