@@ -41,6 +41,11 @@ function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::Array{Float64,1}, N=3, 
     HMMSpikeTemplateModel(lA, μ, σ)
 end
 
+function StatsBase.fit(model::HMMSpikeTemplateModel, X::AbstractArray{Float64,1}, nsteps, callback)
+    lA, μ, σ = train_model(X, model.state_matrix, model.μ, model.σ, nsteps,callback)
+    HMMSpikeTemplateModel(lA, μ, σ)
+end
+
 function StatsBase.predict(model::HMMSpikingModel)
     reconstruct_signal(model.ml_seq, model.template_model.state_matrix, model.template_model.μ, model.template_model.σ)
 end
