@@ -82,3 +82,7 @@ function create_signal(N::Integer, sigma::Number, pp::Array{Float64,1}, template
     end
     return S
 end
+
+function get_chunk(X::AbstractArray{Float64,1},idx,chunksize=100_000)
+    X[(idx-1)*chunksize+1:idx*chunksize]
+end
