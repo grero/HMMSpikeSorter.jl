@@ -320,9 +320,9 @@ function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Floa
         if verbose > 0
             print("$i ")
         end
-		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ)
         callback(μ)
         yield()
+		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ)
 	end
     if verbose > 0
         println()
