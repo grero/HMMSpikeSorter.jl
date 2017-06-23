@@ -123,9 +123,9 @@ function viterbi(y::AbstractArray{Float64,1}, lA::StateMatrix, μ::Array{Float64
             for l in 1:N
                 q += funcl(y[i], μ[lA.states[l,j],l], σ)
             end
-            t = T1[k,i-1]+lp+q
+            t = T1[k,i-1]+lp
             if t > T1[j,i] 
-                T1[j,i] = t
+                T1[j,i] = t+q
                 T2[j,i] = k
             end
         end
