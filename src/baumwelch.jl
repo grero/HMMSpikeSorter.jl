@@ -301,17 +301,17 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     lA_new, μ, σ
 end
 
-function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=100,callback::Function=x->nothing;verbose::Integer=1)
-    lp = log(fill(0.1, N))
+function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=8,callback::Function=x->nothing;verbose::Integer=1,p0=2.0^(-3*K/2))
+    lp = log(fill(p0, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
     #
     μ = ones(K,N)
+    σ = std(X)
     for i in 1:N
-        μ[:,i] = create_spike_template(K, rand(), rand(), rand())
+        μ[:,i] = create_spike_template(K, σ*rand(), rand(), rand())
     end
     #μ = exp(rand(K,N))
     μ[1,:] = 0.0 #all neurons must start from silence
-    σ = 0.1
     train_model(X, state_matrix, μ, σ, nsteps, callback;verbose=verbose)
 end
 
