@@ -56,7 +56,7 @@ StateMatrix(states,transitions, Π, K, N, nstates) = StateMatrix(states, transit
 
 function generate_states(N,K,allow_overlaps=true)
     if allow_overlaps
-        states = zeros(Int16,N,1+N*(K-1) + N*(N-1)*(K-1)*(K-1))
+        states = zeros(Int16,N,1+N*(K-1) + div(N*(N-1)*(K-1)*(K-1),2))
     else
         states = zeros(Int16,N,1+N*(K-1))
     end
@@ -68,11 +68,8 @@ function generate_states(N,K,allow_overlaps=true)
         end
     end
     if allow_overlaps
-        for i in 1:N
-           for j in 1:N
-               if i==j
-                   continue
-               end
+        for i in 1:N-1
+           for j in i+1:N
                for k1 in 1:K-1
                    for k2 in 1:K-1
                        states[i,k] = k1
