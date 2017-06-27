@@ -2,8 +2,8 @@ module HMMSpikeSorter
 using StatsBase
 using FileIO
 using MAT
-import StatsBase.fit, StatsBase.predict, StatsBase.loglikelihood, StatsBase.model_response
 import FileIO.save
+import StatsBase.fit, StatsBase.predict, StatsBase.loglikelihood, StatsBase.model_response, StatsBase.bic
 using Distributions
 include("utils.jl")
 include("types.jl")

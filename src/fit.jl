@@ -60,3 +60,9 @@ function plot(model::HMMSpikingModel)
     f
 end
 
+function StatsBase.bic(model::HMMSpikingModel)
+    k = length(model.template_model.μ) + 1 + model.template_model.state_matrix.N
+    n = length(model.ml_seq)
+    log(n)*k - 2*loglikelihood(model)
+end
+
