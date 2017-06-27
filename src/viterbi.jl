@@ -108,26 +108,36 @@ function viterbi(y::AbstractArray{Float64,1}, lA::StateMatrix, μ::Array{Float64
     #define initial elements
     for i=1:nstates
         T1[i,1] = lA.π[i]
+        _μ = 0.0
         for j in 1:N
-            T1[i,1] += funcl(y[1], μ[lA.states[j,i],j], σ)
+            _μ += μ[lA.states[j,i],j]
         end
+        T1[i,1] = funcl(y[1], _μ, σ)
     end
     #T1[1,1] = 0
+    q = zeros(nstates)
     for i=2:nobs
+        yi = y[i]
+        for j in 1:nstates
+            _μ = 0.0
+            for l in 1:N
+                _μ += μ[lA.states[l,j],l]
+            end
+            q[j] = funcl(yi, _μ, σ)
+        end
         for qq in lA.transitions
             k = qq[1]
             j = qq[2]
             lp = qq[3]
 
-            q = 0.0
-            for l in 1:N
-                q += funcl(y[i], μ[lA.states[l,j],l], σ)
-            end
             t = T1[k,i-1]+lp
             if t > T1[j,i] 
-                T1[j,i] = t+q
+                T1[j,i] = t
                 T2[j,i] = k
             end
+        end
+        for j in 1:nstates
+            T1[j,i] += q[j]
         end
     end
     #define the last state
