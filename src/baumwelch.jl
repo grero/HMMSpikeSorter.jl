@@ -26,12 +26,14 @@ function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
     T = length(V)
     nstates = lA.nstates
     a = fill(-Inf,nstates, T)
+    _μ = zeros(nstates)
     for i in 1:nstates
         a[i,1] = lA.π[i]
         ss = lA.states[:,i]
         for j in 1:lA.N
-            a[i,1] += funcl(V[1],μ[ss[j],j], σ)
+            _μ[i] += μ[ss[j],j]
         end
+        a[i,1] = funcl(V[1],_μ[i], σ)
     end
     states = lA.states
     N = lA.N
@@ -41,10 +43,7 @@ function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
             k = qq[1]
             j = qq[2]
             lp = qq[3]
-            b = 0.0
-            for l in 1:N
-                b += funcl(v, μ[states[l,j],l], σ)
-            end
+            b = funcl(v, _μ[j], σ)
             a[j,i] = logsumexpl(a[j,i], a[k,i-1] + lp + b)
         end
     end
@@ -77,18 +76,21 @@ function backward(V::Array{Float64,1},lA::StateMatrix, μ::Array{Float64,2}, σ:
     K = lA.K
     N = lA.N
     states = lA.states
-    a = log(zeros(nstates, T))
+    a = fill(-Inf, nstates, T)
     a[:,T] = 0.0
+    _μ = zeros(nstates)
+    for j in 1:nstates
+        for l in 1:N
+            _μ[j] += μ[states[l,j], l]
+        end
+    end
     for i in T-1:-1:1
         v = V[i+1]
         for qq in lA.transitions
             j = qq[1]
             k = qq[2]
             lp = qq[3]
-            b = 0.0
-            for l in 1:N
-                b += funcl(v, μ[states[l,k], l], σ)
-            end
+            b = funcl(v, _μ[k], σ)
             a[j,i] = logsumexpl(a[j,i], a[k, i+1] + lp + b)
         end
     end
@@ -205,6 +207,12 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     N = lA.N
     K = lA.K
     γf = zeros(nstates, length(x))
+    _μ = zeros(nstates)
+    for j in 1:nstates
+        for l in 1:N
+            _μ[j] += μ[lA.states[l,j],l]
+        end
+    end
 	for t in 1:length(x)
 		g = -Inf
 		for j in 1:nstates
@@ -226,23 +234,17 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             #j = sidx[i]
             #find the transition from states 1 to state j
             #tidx = findfirst(q->q[1]==1 && q[2]==j, lA.transitions)
-            bb = 0.0 
             j = lA.transitions[tidx[i]][2]
             lp = lA.transitions[tidx[i]][3]
-            for l in 1:N
-                bb += funcl(_x, μ[lA.states[l,j],l],σ)
-            end
+            bb = funcl(_x, _μ[j],σ)
             ξ[i,t] = α[1,t]  + lp + β[j,t+1] + bb
         end
         q = -Inf
         for qq in lA.transitions
-            bb = 0.0 
             i = qq[1]
             j = qq[2]
             lp = qq[3]
-            for l in 1:N
-                bb += funcl(_x, μ[lA.states[l,j],l],σ)
-            end
+            bb = funcl(_x, _μ[j] ,σ)
             q = logsumexpl(q,α[i,t]  + lp + β[j,t+1] + bb)
         end
         for i in 1:size(ξ,1)
@@ -289,11 +291,9 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
         for t in 1:length(x)
             _x = x[t]
             eγf = γf[j,t]
-            for i in 1:N
-                d = _x-μ[lA.states[i,j],i]
-                x2 += d*d*exp(eγf) 
-                qq += exp(eγf)
-            end
+            d = _x-_μ[j]
+            x2 += d*d*exp(eγf) 
+            qq += exp(eγf)
         end
 	end
     σ2 = x2/qq 
