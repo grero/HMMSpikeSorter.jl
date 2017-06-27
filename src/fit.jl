@@ -3,7 +3,7 @@ function StatsBase.fit(::Type{HMMSpikingModel}, X::Array{Float64,1}, N=3, K=60,n
     fit(HMMSpikingModel, templates, X, callback)
 end
 
-function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  callback::Function=x->nothing)
+function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  callback::Function=x->nothing;kvs...)
     x,T2, T1 = viterbi(X, templates.state_matrix, templates.μ, templates.σ)
     #compute log-likelihood
     ll = 0.0
@@ -36,8 +36,8 @@ function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel
     HMMSpikingModel(templates, ml_seq, ll, X)
 end
 
-function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::Array{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
-    lA, μ, σ = train_model(X, N, K, resolve_overlaps, nsteps, callback)
+function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::Array{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing;kvs...)
+    lA, μ, σ = train_model(X, N, K, resolve_overlaps, nsteps, callback;kvs...)
     HMMSpikeTemplateModel(lA, μ, σ)
 end
 

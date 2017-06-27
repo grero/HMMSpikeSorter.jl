@@ -305,6 +305,9 @@ function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nstep
     lp = log(fill(p0, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
     #
+    if verbose > 0
+        @show state_matrix.nstates
+    end
     μ = ones(K,N)
     σ = std(X)
     for i in 1:N
@@ -322,7 +325,7 @@ function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Floa
         end
         callback(μ)
         yield()
-		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ)
+		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ;verbose=verbose)
 	end
     if verbose > 0
         println()
@@ -336,9 +339,12 @@ function train_model_old(X,pp0, aa0, μ0, σ0)
 	pp,aa,μ,σ = update(α, β, aa0, μ0, σ0, X)
 end
 
-function train_model(X,state_matrix, μ0, σ0)
+function train_model(X::Array{Float64,1},state_matrix::StateMatrix, μ0::Array{Float64,2}, σ0::Float64;verbose=0)
+    verbose > 0 && println("Running forward algorithm...")
 	α = forward(X, state_matrix, μ0, σ0)
+    verbose > 0 && println("Running backward algorithm...")
 	β = backward(X, state_matrix, μ0, σ0)
+    verbose > 0 && println("Running update algorithm...")
 	state_matrix,μ,σ = update(α, β, state_matrix, μ0, σ0, X)
 end
 
