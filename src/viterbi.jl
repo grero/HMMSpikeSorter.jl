@@ -104,7 +104,7 @@ function viterbi(y::AbstractArray{Float64,1}, lA::StateMatrix, μ::Array{Float64
     nobs = size(y,1)
     x = zeros(Int16, nobs)
     T1 = log(zeros(Float64, nstates, nobs))
-    T2 = zeros(Int16, nstates, nobs)
+    T2 = ones(Int16, nstates, nobs)
     #define initial elements
     for i=1:nstates
         T1[i,1] = lA.π[i]
