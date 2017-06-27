@@ -179,7 +179,7 @@ function update(α, β, lA, μ, σ, x)
 
 	#TODO: Check if this actually works
 	_σ = zeros(μ)
-    gg = log(zeros(μ))
+    gg = fill(-Inf,size(mu))
 	for j in 1:nstates
 		x1 = -Inf
 		x2 = -Inf
@@ -252,7 +252,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
         end
     end
     bb = -Inf
-    xx = log(zeros(size(ξ,1)))
+    xx = fill(-Inf, size(ξ,1))
     for t in 1:length(x)-1
         bb = logsumexpl(bb, γf[1,t]) #we need only the silent state
         for j in 1:size(ξ,1)
