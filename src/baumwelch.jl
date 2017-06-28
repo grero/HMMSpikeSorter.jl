@@ -265,35 +265,42 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     lA_new = StateMatrix(lA.states-1, pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
 	_σ = zeros(μ)
     gg = zeros(μ)
-    x2 = 0.0
-    qq = 0.0
-	for j in 1:nstates
-		x1 = 0.0 
-        #only look at states where a single neuron is active
-        aidx =  find(lA.states[:,j].>=2)
-        #FIXME: Check that the μ and σ are correctly computed
-        if length(aidx) == 1
-            _aidx = aidx[1]
-            ss = lA.states[_aidx,j]
-            for t in 1:length(x)
-                _x = x[t]
-                #eγf = exp(γf[j,t])
-                eγf = γf[j,t]
-                #x1 = logsumexpl(x1, eγf+_x)
-                x1 += _x*exp(eγf)
-                gg[ss,_aidx] += exp(eγf)
-            end
-            if ss > 1 #only upgade the mean for other states
-                μ[ss,_aidx] = x1/gg[ss,_aidx]
+    fill!(μ, 0.0)
+    sidx = find(sum(lA.states.>=2,1).==1) #find states with only one active neuron
+    for t in 1:length(x)
+        _x = x[t]
+        for j in sidx
+            eγf = exp(γf[j,t])
+            for l in 1:N
+                ss = lA.states[l,j]
+                if ss > 1
+                    μ[ss, l] += _x*eγf
+                    gg[ss,l] += eγf
+                end
             end
         end
-        #upgrade variance; assumed equal for for all neurons and states
-        for t in 1:length(x)
+    end
+    for l in 1:N
+        for j in 2:K
+            μ[j,l] /= gg[j,l]
+        end
+    end
+    fill!(_μ, 0.0)
+    for j in 1:nstates
+        for l in 1:N
+            _μ[j] += μ[lA.states[l,j],l]
+        end
+    end
+    #upgrade variance; assumed equal for for all neurons and states
+    x2 = 0.0
+    qq = 0.0
+    for t in 1:length(x)
+        for j in 1:nstates
             _x = x[t]
-            eγf = γf[j,t]
+            eγf = exp(γf[j,t])
             d = _x-_μ[j]
-            x2 += d*d*exp(eγf) 
-            qq += exp(eγf)
+            x2 += d*d*eγf 
+            qq += eγf
         end
 	end
     σ2 = x2/qq 
