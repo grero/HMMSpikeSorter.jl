@@ -265,17 +265,15 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     lA_new = StateMatrix(lA.states-1, pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
 	_σ = zeros(μ)
     gg = zeros(μ)
-    qq = 0.0
     fill!(μ, 0.0)
     sidx = find(sum(lA.states.>=2,1).==1) #find states with only one active neuron
-    sl = length(sidx)
     for t in 1:length(x)
         _x = x[t]
         for j in sidx
+            eγf = exp(γf[j,t])
             for l in 1:N
                 ss = lA.states[l,j]
                 if ss > 1
-                    eγf = exp(γf[j,t])
                     μ[ss, l] += _x*eγf
                     gg[ss,l] += eγf
                 end
@@ -295,6 +293,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     end
     #upgrade variance; assumed equal for for all neurons and states
     x2 = 0.0
+    qq = 0.0
     for t in 1:length(x)
         for j in 1:nstates
             _x = x[t]
