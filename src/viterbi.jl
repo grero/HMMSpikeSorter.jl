@@ -99,31 +99,32 @@ end
 function viterbi(y::AbstractArray{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
     #straight forward implementation of the Viterbi algorithm
     #assume gaussian emission probabilities
+    lσ = log(σ)
     nstates = lA.nstates
     N = lA.N
     nobs = size(y,1)
     x = zeros(Int16, nobs)
-    T1 = log(zeros(Float64, nstates, nobs))
+    T1 = fill(-Inf, nstates, nobs)
     T2 = ones(Int16, nstates, nobs)
     #define initial elements
-    for i=1:nstates
+    @inbounds for i=1:nstates
         T1[i,1] = lA.π[i]
         _μ = 0.0
         for j in 1:N
             _μ += μ[lA.states[j,i],j]
         end
-        T1[i,1] = funcl(y[1], _μ, σ)
+        T1[i,1] = funcl(y[1], _μ, σ, lσ)
     end
     #T1[1,1] = 0
     q = zeros(nstates)
-    for i=2:nobs
+    @inbounds for i=2:nobs
         yi = y[i]
         for j in 1:nstates
             _μ = 0.0
             for l in 1:N
                 _μ += μ[lA.states[l,j],l]
             end
-            q[j] = funcl(yi, _μ, σ)
+            q[j] = funcl(yi, _μ, σ, lσ)
         end
         for qq in lA.transitions
             k = qq[1]
