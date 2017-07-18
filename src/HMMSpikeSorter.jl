@@ -2,6 +2,7 @@ module HMMSpikeSorter
 using StatsBase
 using FileIO
 using MAT
+using ProgressMeter
 import FileIO.save
 import StatsBase.fit, StatsBase.predict, StatsBase.loglikelihood, StatsBase.model_response, StatsBase.bic
 using Distributions

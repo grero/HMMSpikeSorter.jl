@@ -19,19 +19,22 @@ function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel
     n = length(X)
     ml_seq = ones(Int16,n)
     ll = 0.0
+    pp = Progress(n)
     while j < n
+        gc()
         j = min(i + chunksize-1,n)
         k = j-i+1
-        x,T2, T1 = viterbi(view(X,i:j), templates.state_matrix, templates.μ, templates.σ)
-        while x[k] > 1
-            j -= 1
-            k -= 1
+        x,_ll  = viterbi(view(X,i:j), templates.state_matrix, templates.μ, templates.σ)
+        if j < n
+            while x[k] > 1
+                j -= 1
+                k -= 1
+            end
         end
-        ml_seq[i:j] = x[1:k]
-        for i in 1:k
-            ll += T1[x[i],i]
-        end
+        ml_seq[i:j] .= x[1:k]
+        ll += _ll
         i = j
+        update!(pp, i)
     end
     HMMSpikingModel(templates, ml_seq, ll, X)
 end

@@ -144,10 +144,12 @@ function viterbi(y::AbstractArray{Float64,1}, lA::StateMatrix, μ::Array{Float64
     #define the last state
     x[end] = indmax(T1[:,end])
     #run backward
+    ll = 0.0
     for i=nobs:-1:2
-        x[i-1] = T2[x[i],i]
+        @inbounds x[i-1] = T2[x[i],i]
+        ll += T1[x[i], i]
     end
-    return x,T2, T1
+    return x,ll
 end
 
 function viterbi_2{T<:Real}(y::Array{T,1}, A::Array{Float64,2}, mu::Array{Float64,1}, C::Float64)
