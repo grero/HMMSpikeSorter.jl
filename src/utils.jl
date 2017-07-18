@@ -1,6 +1,7 @@
-
+const log2pi = 0.5*log(2*pi)
 func(x, μ, σ) = (σ2 = σ*σ; dd=x-μ;exp(-dd*dd/(2*σ2))/sqrt(2*pi*σ2))
-funcl(x, μ, σ) = (σ2 = σ*σ; dd=x-μ;-0.5*log(2*pi*σ2) - dd*dd/(2*σ2))
+funcl(x, μ, σ) = (σ2 = σ*σ; dd=x-μ;-log2pi-log(σ) - dd*dd/(2*σ2))
+funcl(x, μ, σ, lσ) = (σ2 = σ*σ; dd=x-μ;-log2pi-lσ - dd*dd/(2*σ2))
 
 """
 Logpdf of log-normal distribution
