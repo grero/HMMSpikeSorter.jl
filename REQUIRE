@@ -1,2 +1,5 @@
+StatsBase
 Distributions
 FileIO
+MAT
+ProgressMeter
