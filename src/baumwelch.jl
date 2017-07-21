@@ -262,7 +262,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     #update the transition matrix with the new transitions
     pp = γf[:,1]
     xb = xx-bb
-    lA_new = StateMatrix(lA.states-1, pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
+    lA_new = StateMatrix(lA.states-one(Int16), pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
 	_σ = zeros(μ)
     gg = zeros(μ)
     fill!(μ, 0.0)
