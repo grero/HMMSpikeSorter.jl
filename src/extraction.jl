@@ -2,7 +2,7 @@ function extract_spiketimes(model::HMMSpikingModel)
     pidx = Array{Array{Int64,1}}(0)
     for i in 1:model.template_model.state_matrix.N
         qidx = indmin(model.template_model.μ[:,i])
-        sidx = find(any(model.template_model.state_matrix.states .== qidx,1))
+        sidx = find(model.template_model.state_matrix.states[i,:] .== qidx)
         _pidx = findin(model.ml_seq,sidx)
         push!(pidx, _pidx)
     end
