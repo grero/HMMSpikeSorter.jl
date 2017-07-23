@@ -123,10 +123,10 @@ function update(α, β, lA, μ, σ, x)
 	for t in 1:length(x)
 		g = -Inf
 		for j in 1:nstates
-            g = logsumexpl(g, α[j,t]+β[j,t] )
+            @inbounds g = logsumexpl(g, α[j,t]+β[j,t] )
 		end
 		for j in 1:nstates
-			γf[j,t] = α[j,t] + β[j,t] - g
+			@inbounds γf[j,t] = α[j,t] + β[j,t] - g
 		end
 	end
     #println(all(isfinite(γf)))
@@ -134,15 +134,15 @@ function update(α, β, lA, μ, σ, x)
 		q = -Inf
 		for j in 1:nstates
 			for i in 1:nstates
-                if isfinite(lA[j,i]) #ignore impossible transitions
-                    q = logsumexpl(q, α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ))
+                @inbounds if isfinite(lA[j,i]) #ignore impossible transitions
+                    @inbounds q = logsumexpl(q, α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ))
                 end
 			end
 		end
 		for j in 1:nstates
 			for i in 1:nstates
-                if isfinite(lA[j,i])
-                    ξ[i,j,t] = α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ) - q
+                @inbounds if isfinite(lA[j,i])
+                    @inbounds ξ[i,j,t] = α[j,t]+lA[j,i]+β[i,t+1]+funcl(x[t+1],μ[i],σ) - q
                 end
 			end
 		end
@@ -210,16 +210,16 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     _μ = zeros(nstates)
     for j in 1:nstates
         for l in 1:N
-            _μ[j] += μ[lA.states[l,j],l]
+            @inbounds _μ[j] += μ[lA.states[l,j],l]
         end
     end
 	for t in 1:length(x)
 		g = -Inf
 		for j in 1:nstates
-            g = logsumexpl(g, α[j,t]+β[j,t] )
+            @inbounds g = logsumexpl(g, α[j,t]+β[j,t] )
 		end
 		for j in 1:nstates
-			γf[j,t] = α[j,t] + β[j,t] - g
+			@inbounds γf[j,t] = α[j,t] + β[j,t] - g
 		end
 	end
     #update transition matrix; the only non-determnisitc transitions are from noise (state 0) to active for each neuron
@@ -234,29 +234,29 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
             #j = sidx[i]
             #find the transition from states 1 to state j
             #tidx = findfirst(q->q[1]==1 && q[2]==j, lA.transitions)
-            j = lA.transitions[tidx[i]][2]
-            lp = lA.transitions[tidx[i]][3]
-            bb = funcl(_x, _μ[j],σ)
-            ξ[i,t] = α[1,t]  + lp + β[j,t+1] + bb
+            @inbounds j = lA.transitions[tidx[i]][2]
+            @inbounds lp = lA.transitions[tidx[i]][3]
+            @inbounds bb = funcl(_x, _μ[j],σ)
+            @inbounds ξ[i,t] = α[1,t]  + lp + β[j,t+1] + bb
         end
         q = -Inf
         for qq in lA.transitions
             i = qq[1]
             j = qq[2]
             lp = qq[3]
-            bb = funcl(_x, _μ[j] ,σ)
-            q = logsumexpl(q,α[i,t]  + lp + β[j,t+1] + bb)
+            @inbounds bb = funcl(_x, _μ[j] ,σ)
+            @inbounds q = logsumexpl(q,α[i,t]  + lp + β[j,t+1] + bb)
         end
         for i in 1:size(ξ,1)
-            ξ[i,t] -= q
+            @inbounds ξ[i,t] -= q
         end
     end
     bb = -Inf
     xx = fill(-Inf, size(ξ,1))
     for t in 1:length(x)-1
-        bb = logsumexpl(bb, γf[1,t]) #we need only the silent state
+        @inbounds bb = logsumexpl(bb, γf[1,t]) #we need only the silent state
         for j in 1:size(ξ,1)
-            xx[j] = logsumexpl(xx[j],ξ[j,t])
+            @inbounds xx[j] = logsumexpl(xx[j],ξ[j,t])
         end
     end
     #update the transition matrix with the new transitions
@@ -270,32 +270,32 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     for t in 1:length(x)
         _x = x[t]
         for j in sidx
-            eγf = exp(γf[j,t])
+            @inbounds eγf = exp(γf[j,t])
             for l in 1:N
-                ss = lA.states[l,j]
+                @inbounds ss = lA.states[l,j]
                 if ss > 1
-                    μ[ss, l] += _x*eγf
-                    gg[ss,l] += eγf
+                    @inbounds μ[ss, l] += _x*eγf
+                    @inbounds gg[ss,l] += eγf
                 end
             end
         end
     end
     for l in 1:N
         for j in 2:K
-            μ[j,l] /= gg[j,l]
+            @inbounds μ[j,l] /= gg[j,l]
         end
     end
     fill!(_μ, 0.0)
     for j in 1:nstates
         for l in 1:N
-            _μ[j] += μ[lA.states[l,j],l]
+            @inbounds _μ[j] += μ[lA.states[l,j],l]
         end
     end
     #upgrade variance; assumed equal for for all neurons and states
     x2 = 0.0
     qq = 0.0
     for t in 1:length(x)
-        for j in 1:nstates
+        @inbounds for j in 1:nstates
             _x = x[t]
             eγf = exp(γf[j,t])
             d = _x-_μ[j]
