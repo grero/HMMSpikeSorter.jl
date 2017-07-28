@@ -115,7 +115,7 @@ function viterbi(y::AbstractArray{Float64,1}, lA::StateMatrix, μ::Array{Float64
         end
         T1[i,1] = funcl(y[1], _μ, σ, lσ)
     end
-    #T1[1,1] = 0
+    T1[1,1] = 0
     q = zeros(nstates)
     @inbounds for i=2:nobs
         yi = y[i]
