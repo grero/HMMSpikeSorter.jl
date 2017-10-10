@@ -26,3 +26,7 @@ function save_units(units::Dict)
         MAT.matwrite("sorted/$k", v)
     end
 end
+
+function load_unit(fname)
+    MAT.matread(fname)
+end
