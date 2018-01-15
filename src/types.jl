@@ -118,9 +118,8 @@ function get_valid_transitions(states::Array{Int16,2}, K,lp)
     idx
 end
 
-function HMMSpikeTemplateModel(μ::Array{Float64,2}, lp::Array{Float64,1},allow_overlaps=true)
+function HMMSpikeTemplateModel(μ::Array{Float64,2}, lp::Array{Float64,1},σ = mean((μ[1,:]).^2), allow_overlaps=true)
     K,N = size(μ)
-    σ = mean((μ[1,:]).^2)
     state_matrix = StateMatrix(N,K, lp, allow_overlaps)
     HMMSpikeTemplateModel(state_matrix, μ, σ)
 end
