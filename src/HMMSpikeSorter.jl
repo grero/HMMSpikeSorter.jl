@@ -1,3 +1,5 @@
+__precompile__()
+
 module HMMSpikeSorter
 using StatsBase
 using FileIO
