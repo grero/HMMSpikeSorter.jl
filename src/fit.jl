@@ -46,7 +46,7 @@ function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::AbstractArray{Float64,1
     HMMSpikeTemplateModel(lA, μ, σ)
 end
 
-function StatsBase.fit(model::HMMSpikeTemplateModel, X::AbstractArray{Float64,1}, nsteps, callback)
+function StatsBase.fit!(model::HMMSpikeTemplateModel, X::AbstractArray{Float64,1}, nsteps, callback::Function=x->nothing)
     lA, μ, σ = train_model(X, model.state_matrix, model.μ, model.σ, nsteps,callback)
     HMMSpikeTemplateModel(lA, μ, σ)
 end
