@@ -49,7 +49,7 @@ end
 create_spike_template(nstates::Integer) = create_template(nstates, 1.0, 0.8, 0.2)
 function create_spike_template(nstates::Integer, a::Real, b::Real, c::Real)
     x = linspace(0,1.5,nstates)
-    y = a*sin(2*pi*x).*exp(-(b-x).^2/c)
+    y = a*sin.(2*pi*x).*exp.(-(b-x).^2/c)
     return y
 end
 
