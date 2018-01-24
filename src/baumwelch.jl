@@ -353,6 +353,9 @@ function train_model(X::Array{Float64,1},state_matrix::StateMatrix, μ0::Array{F
 	β = backward(X, state_matrix, μ0, σ0)
     verbose > 0 && println("Running update algorithm...")
 	state_matrix,μ,σ = update(α, β, state_matrix, μ0, σ0, X)
+    verbose > 0 && println("Removing sparse templates...")
+    state_matrix, idx = remote_sparse(state_matrix)
+    state_matrix, μ[:,idx],σ
 end
 
 function decode()
@@ -429,4 +432,25 @@ function condense_templates(templates::HMMSpikeTemplateModel, α=0.05)
             #compute θ = sum((t1-t2)Y2/σ
         end
     end
+end
+
+"""
+Remove templates associated with very low firing rate.
+"""
+function remove_sparse(state_matrix;;StateMatrix, lp0=-50.0)
+    tt = filter(x->(x[1]==1) && (x[2] != 1) && (x[3] > p0), state_matrix.transitions)
+    #get the state we transition to
+    idx = [_tt[2] for _tt in tt]
+    #get the active templates for these states
+    tidx = Array{Int64}(length(idx))
+    for (i,ix) in enumerate(idx)
+        for j in 1:size(state_matrix.states,1)
+            if state_matrix.states[j,ix] == 2
+                tidx[i] == j
+                break
+            end
+        end
+    end
+    lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
+    lA, tidx
 end
