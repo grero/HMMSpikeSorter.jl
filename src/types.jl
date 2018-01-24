@@ -146,8 +146,13 @@ end
 Create a new HMMSpikeTemplateModel with templates `idx`. Optionally, alllow these templates to overlap by setting `resolve_overlaps` to `true`.
 """
 function prune_templates(templates::HMMSpikeTemplateModel, idx::AbstractArray{Int64,1},resolve_overlaps=true)
-    lp, tidx = get_lp(templates.state_matrix)
-    N = length(idx)
-    lA = StateMatrix(N, templates.state_matrix.K, lp[findin(tidx,idx)],resolve_overlaps)
+    lA = prune_templates(templates.state_matrix, idx, resolve_overlaps)
     HMMSpikeTemplateModel(lA, templates.μ[:,idx], templates.σ)
+end
+
+function prune_templates(state_matrix::StateMatrix, idx::AbstractVector{Int64}, resolve_overlaps=true)
+    lp, tidx = get_lp(state_matrix)
+    N = length(idx)
+    lA = StateMatrix(N, state_matrix.K, lp[findin(tidx,idx)],resolve_overlaps)
+    lA
 end
