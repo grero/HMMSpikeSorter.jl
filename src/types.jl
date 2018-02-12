@@ -1,5 +1,5 @@
 type StateMatrix
-    states::Array{Int16,2}
+    states::Matrix{Int16}
     transitions::Array{Tuple{Int64,Int64,Float64},1}
     π::Array{Float64,1}
     K::Int64 #number of neurons
