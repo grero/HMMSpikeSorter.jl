@@ -8,6 +8,10 @@ type StateMatrix
     resolve_overlaps::Bool
 end
 
+# The null model is one containing a single noise state.
+StateMatrix() = StateMatrix(ones(1,1), [(1,1,0.0)], [1.0], 0, 0, 1, false)
+Base.isempty(state_matrix::StateMatrix) = isempty(state_matrix.states)
+
 type HMMSpikeTemplateModel
     state_matrix::StateMatrix
     μ::Array{Float64,2}
