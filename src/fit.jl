@@ -1,14 +1,14 @@
-function StatsBase.fit(::Type{HMMSpikingModel}, X::Array{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
+function StatsBase.fit(::Type{HMMSpikingModel}, X::AbstractVector{Float64}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
     templates = fit(HMMSpikeTemplateModel, X, N, K, nsteps, resolve_overlaps, callback)
     fit(HMMSpikingModel, templates, X, callback)
 end
 
-function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  callback::Function=x->nothing;kvs...)
+function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::AbstractVector{Float64},  callback::Function=x->nothing;kvs...)
     x,ll = viterbi(X, templates.state_matrix, templates.μ, templates.σ)
     HMMSpikingModel(templates, x,ll,X)
 end
 
-function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  chunksize::Integer, callback::Function=x->nothing)
+function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::AbstractVector{Float64},  chunksize::Integer, callback::Function=x->nothing)
     i = 1
     j = 1
     n = length(X)
