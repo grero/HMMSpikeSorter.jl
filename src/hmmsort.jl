@@ -3,37 +3,23 @@ using HDF5
 using MAT
 using HMMSpikeSorter
 
-Base.@ccallable function julia_main(ARGS::Vector{String})::Cint
-    #pargs = parseargs()
-    pargs = my_parse_args(ARGS)
-    if !isempty(pargs)
-        if !isfile(pargs["inputfile"]) || !isfile(pargs["datafile"])
-            print("Both inputfile and data file must exist\n")
-            return 23
-        else
-            sort_data(pargs["inputfile"], pargs["datafile"], pargs["outputfile"]);
-        end
-    end
-    return 0
-end
-
 function parseargs()
     s = ArgParseSettings()
     @add_arg_table s begin
         "--inputfile"
         help = "File containing templates to be used for sorting"
         arg_type = String
-        required = false
+        required = true
         default = ""
         "--datafile"
         help = "Data file containing data to bo sorted"
         arg_type = String
-        required = false
+        required = true
         default = ""
         "--outputfile"
         help = "File to save the spiking model to"
         arg_type = String
-        required = false
+        required = true
         default = ""
     end
     parsed_args = parse_args(ARGS, s)
@@ -107,3 +93,20 @@ function sort_data(inputfile::String, datafile::String, outputfile::String;dosav
     print("Done! Results saved to $(outputfile)\n")
     return output_data
 end
+
+Base.@ccallable function julia_main(ARGS::Vector{String})::Cint
+    #pargs = parseargs()
+    pargs = my_parse_args(ARGS)
+    if !isempty(pargs)
+        if !isfile(pargs["inputfile"]) || !isfile(pargs["datafile"])
+            print("Both inputfile and data file must exist\n")
+            return 23
+        else
+            sort_data(pargs["inputfile"], pargs["datafile"], pargs["outputfile"]);
+        end
+    end
+    return 0
+end
+
+    #pargs = parseargs()
+    #sort_data(pargs["inputfile"], pargs["datafile"], pargs["outputfile"])
