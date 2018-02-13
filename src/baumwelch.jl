@@ -440,8 +440,11 @@ end
 """
 Remove templates associated with very low firing rate.
 """
-function remove_sparse(state_matrix::StateMatrix, lp0=-50.0)
-    tt = filter(x->(x[1]==1) && (x[2] != 1) && (x[3] > p0), state_matrix.transitions)
+function remove_sparse(state_matrix::StateMatrix, lp0=-70.0)
+    tt = filter(x->(x[1]==1) && (x[2] != 1) && (x[3] > lp0), state_matrix.transitions)
+    if isempty(tt)
+        return StateMatrix(), Int64[]
+    end
     #get the state we transition to
     idx = [_tt[2] for _tt in tt]
     #get the active templates for these states
