@@ -333,6 +333,9 @@ function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Floa
         callback(μ)
         yield()
 		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ;verbose=verbose)
+        if isempty(state_matrix)
+            break
+        end
 	end
     if verbose > 0
         println()
