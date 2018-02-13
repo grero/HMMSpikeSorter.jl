@@ -42,8 +42,7 @@ function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel
 end
 
 function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::AbstractArray{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing;kvs...)
-    lA, μ, σ = train_model(X, N, K, resolve_overlaps, nsteps, callback;kvs...)
-    HMMSpikeTemplateModel(lA, μ, σ)
+    train_model(X, N, K, resolve_overlaps, nsteps, callback;kvs...)
 end
 
 function StatsBase.fit!(model::HMMSpikeTemplateModel, X::AbstractArray{Float64,1}, nsteps, callback::Function=x->nothing)
