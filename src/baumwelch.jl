@@ -357,8 +357,10 @@ function train_model(X::Array{Float64,1},state_matrix::StateMatrix, μ0::Array{F
     verbose > 0 && println("Running update algorithm...")
 	state_matrix,μ,σ = update(α, β, state_matrix, μ0, σ0, X)
     verbose > 0 && println("Removing sparse templates...")
-    state_matrix, idx = remote_sparse(state_matrix)
-    state_matrix, μ[:,idx],σ
+    state_matrix, idx = remove_sparse(state_matrix)
+    verbose > 0 && println("Removing small templates...")
+    state_matrix, idx2 = remove_small(state_matrix, μ[:,idx], σ, StateBase.PValue(0.05))
+    state_matrix,  μ[:,idx[idx2]], σ
 end
 
 function decode()
@@ -412,13 +414,15 @@ Removes templates from `μ` that are significantly not different from noise at a
 
     function remove_small(μ::Array{Float64,2}, σ::Float64,α=0.05)
 """
-function remove_small(μ::Array{Float64,2}, σ::Float64, lA::StateMatrix, α=0.05)
-    n = size(μ,1)
+function remove_small(state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Float64,  α::StatsBase.PValue=StateBase.Pvalue(0.05))
+    nstates = size(μ,1)
     σ2 = σ.*σ
     Z = sum(μ.^2,1)./σ2
     #use the fact that Z is Χ² distributed with n-1 degress of freedom
-    pvals = 1-cdf(Chisq(n-1),Z)
-    idx = find(pvals .< α)
+    pvals = 1-cdf(Chisq(nstates-1),Z)
+    tidx = find(pvals .< α.v)
+    lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
+    lA, tidx
 end
 
 function remove_small(templates::HMMSpikeTemplateModel, α=0.05,resolve_overlaps=true)
@@ -457,6 +461,19 @@ function remove_sparse(state_matrix::StateMatrix, lp0=-70.0)
             end
         end
     end
+    lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
+    lA, tidx
+end
+
+function remove_small(state_matrix::StateMatrix, mu::Matrix{Float64}, sigma::Float64, data::AbstractVector{T};theshold=4.0) where T<: Real
+    een = get_noise_energy(data, 1.0/sigma, nstates) 
+    remove_small(state_matrix, mu, sigma, een;threshold=threshold)
+end
+
+function remove_small(state_matrix::StateMatrix, mu::Matrix{Float64}, sigma::Float64, ee::Float64;threshold=4)
+    nstates = size(mu,1)
+    eef = get_noise(mu, 1.0/sigma)
+    tidx = find(q->q>threshold*ee,eef)
     lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
     lA, tidx
 end
