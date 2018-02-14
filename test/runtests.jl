@@ -26,8 +26,10 @@ function test_viterbi()
     1-std(Y-S)./std(S)
 end
 
-aa = test_viterbi()
-@test aa ≈ 0.5753193438558597
+@testset "Viterbi" begin
+    aa = test_viterbi()
+    @test aa ≈ 0.5753193438558597
+end
 
 @testset "Unroll" begin
     state_matrix = HMMSpikeSorter.StateMatrix(2,5,log.([0.01, 0.004]))
