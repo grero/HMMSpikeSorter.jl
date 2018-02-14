@@ -88,8 +88,10 @@ function sort_data(inputfile::String, datafile::String, outputfile::String;dosav
     end
     print("Fitting model...\n")
     modelf = HMMSpikeSorter.fit(HMMSpikeSorter.HMMSpikingModel, template_model, _dataf, 100_000)
+    
+    mlseq = HMMSpikeSorter.unroll_mlseq(modelf.ml_seq, modelf.template_model.state_matrix)
 
-    output_data = Dict("mlseq" => modelf.ml_seq,
+    output_data = Dict("mlseq" => mlseq,
                               "ll" => modelf.ll,
                               "waveforms" => modelf.template_model.μ,
                               "lp" => lp,
