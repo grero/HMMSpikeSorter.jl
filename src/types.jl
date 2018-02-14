@@ -25,6 +25,10 @@ type HMMSpikingModel
     y::Array{Float64,1}
 end
 
+function HMMSpikingModel(template_model::HMMSpikeTemplateModel, N::Int64)
+    HMMSpikingModel(template_model, zeros(Int16, N), 0.0, zeros(N))
+end
+
 StatsBase.loglikelihood(model::HMMSpikingModel) = model.ll
 StatsBase.model_response(model::HMMSpikingModel) = model.y
 
