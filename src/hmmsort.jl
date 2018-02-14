@@ -37,19 +37,26 @@ function sort_data(inputfile::String, datafile::String, outputfile::String;dosav
     #load template file 
     print("Loading templates...\n")
     template_model = HDF5.h5open(inputfile, "r") do ff
+        if !("spikeForms" in names(ff))
+            print("No spike forms found. Bailing...")
+            state_matrix = HMMSpikeSorter.StateMatrix()
+            template_model = HMMSpikeSorter.HMMSpikeTemplateModel(state_matrix, zeros(0,0), 0.0)
+            return template_model
+        end
         waveforms = read(ff, "spikeForms")
         nstates,nchannels,ntemplates = size(waveforms)
         cinv = read(ff, "cinv")
         pp = read(ff, "p")
         if length(pp) > max_templates 
+            print("The number of templates exceeds the maximum. Bailing out...\n")
             state_matrix = HMMSpikeSorter.StateMatrix()
         else 
             state_matrix = HMMSpikeSorter.StateMatrix(ntemplates, nstates, log.(pp), true)
         end
         template_model = HMMSpikeSorter.HMMSpikeTemplateModel(state_matrix, waveforms[:,1,:], sqrt(inv(cinv[1])))
+        return template_model
     end
     if length(template_model.state_matrix.states) == 1
-        print("The number of templates exceeds the maximum. Bailing out...\n")
         return Dict()
     end
     print("Creating template model...\n")
