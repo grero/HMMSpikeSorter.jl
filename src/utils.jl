@@ -49,7 +49,7 @@ end
 create_spike_template(nstates::Integer) = create_template(nstates, 1.0, 0.8, 0.2)
 function create_spike_template(nstates::Integer, a::Real, b::Real, c::Real)
     x = linspace(0,1.5,nstates)
-    y = a*sin(2*pi*x).*exp(-(b-x).^2/c)
+    y = a*sin.(2*pi*x).*exp.(-(b-x).^2/c)
     return y
 end
 
@@ -86,4 +86,38 @@ end
 
 function get_chunk(X::AbstractArray{Float64,1},idx,chunksize=100_000)
     X[(idx-1)*chunksize+1:idx*chunksize]
+end
+
+"""
+Estimate the noise energy of data by computing the normalized energy in `nsamples` random patches of length `nstates`.
+"""
+function get_noise_energy(data::AbstractVector{T1}, cinv::T2, nstates::Int64, nsamples=1000) where T1 <: Real where T2 <: Real
+    N = length(data)
+    samples = zeros(nsamples)
+    idx = rand(1:N-nstates, nsamples)
+    sort!(idx)
+    for i in 1:nsamples
+        @inbounds ii = idx[i]
+        s = 0.0
+        for j in 1:nstates
+            x = data[ii+j-1]
+            s += x*cinv*x
+        end
+        @inbounds samples[i] = s
+    end
+    return median(samples)
+end
+
+function get_energy(waveforms::Array{Float64,2}, cinv::Float64)
+    nstates, N = size(waveforms)
+    ee = zeros(N)
+    for i in 1:N
+        _ee = 0.0
+        for j in 1:nstates
+            @inbounds w = waveforms[j,i]
+            _ee += w*cinv*w
+        end
+        @inbounds ee[i] = _ee
+    end
+    ee
 end

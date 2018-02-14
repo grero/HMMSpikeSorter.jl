@@ -1,3 +1,17 @@
+"""
+Unroll the 1-D `mlseq`, returning a 2-D array with the state of each neuron
+"""
+function unroll_mlseq(mlseq::AbstractVector{Int16}, state_matrix::StateMatrix)
+    _mlseq = zeros(Int16, state_matrix.N, length(mlseq))
+    for i in 1:length(mlseq)
+        mi = mlseq[i]
+        for j in 1:state_matrix.N
+            _mlseq[j,i] = state_matrix.states[j,mi]
+        end
+    end
+    _mlseq
+end
+
 function extract_spiketimes(model::HMMSpikingModel)
     pidx = Array{Array{Int64,1}}(0)
     for i in 1:model.template_model.state_matrix.N

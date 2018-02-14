@@ -149,8 +149,8 @@ function update(α, β, lA, μ, σ, x)
 	end
 	#TODO: Check this
 	#Anew = squeeze(sum(ξ[:,:,1:end-1],3)./sum(γf[:,1:end-1],3),3)
-    Anew = log(eye(nstates))
-    Anew = log(diagm(ones(nstates-1),1))
+    Anew = log.(eye(nstates))
+    Anew = log.(diagm(ones(nstates-1),1))
     Anew[1,1] = -Inf
     for t in 1:length(x)-1
         #for i in 1:nstates
@@ -309,7 +309,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
 end
 
 function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=8,callback::Function=x->nothing;verbose::Integer=1,p0=2.0^(-3*K/2))
-    lp = log(fill(p0, N))
+    lp = log.(fill(p0, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
     #
     if verbose > 0
@@ -333,6 +333,9 @@ function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Floa
         callback(μ)
         yield()
 		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ;verbose=verbose)
+        if isempty(state_matrix)
+            break
+        end
 	end
     if verbose > 0
         println()
@@ -353,6 +356,11 @@ function train_model(X::Array{Float64,1},state_matrix::StateMatrix, μ0::Array{F
 	β = backward(X, state_matrix, μ0, σ0)
     verbose > 0 && println("Running update algorithm...")
 	state_matrix,μ,σ = update(α, β, state_matrix, μ0, σ0, X)
+    verbose > 0 && println("Removing sparse templates...")
+    state_matrix, idx = remove_sparse(state_matrix)
+    verbose > 0 && println("Removing small templates...")
+    state_matrix, idx2 = remove_small(state_matrix, μ[:,idx], σ, StateBase.PValue(0.05))
+    state_matrix,  μ[:,idx[idx2]], σ
 end
 
 function decode()
@@ -360,7 +368,7 @@ end
 
 
 function prepA(p,n)
-    A = log(zeros(n,n))
+    A = log.(zeros(n,n))
     A[1,1] = log(1.-p)
     A[1,2] = log(p)
     for i=2:n-1
@@ -406,13 +414,15 @@ Removes templates from `μ` that are significantly not different from noise at a
 
     function remove_small(μ::Array{Float64,2}, σ::Float64,α=0.05)
 """
-function remove_small(μ::Array{Float64,2}, σ::Float64, lA::StateMatrix, α=0.05)
-    n = size(μ,1)
+function remove_small(state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Float64,  α::StatsBase.PValue=StateBase.Pvalue(0.05))
+    nstates = size(μ,1)
     σ2 = σ.*σ
     Z = sum(μ.^2,1)./σ2
     #use the fact that Z is Χ² distributed with n-1 degress of freedom
-    pvals = 1-cdf(Chisq(n-1),Z)
-    idx = find(pvals .< α)
+    pvals = 1-cdf(Chisq(nstates-1),Z)
+    tidx = find(pvals .< α.v)
+    lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
+    lA, tidx
 end
 
 function remove_small(templates::HMMSpikeTemplateModel, α=0.05,resolve_overlaps=true)
@@ -430,4 +440,41 @@ function condense_templates(templates::HMMSpikeTemplateModel, α=0.05)
             #merge if the difference is comptabible with noise
         end
     end
+end
+
+"""
+Remove templates associated with very low firing rate.
+"""
+function remove_sparse(state_matrix::StateMatrix, lp0=-70.0)
+    tt = filter(x->(x[1]==1) && (x[2] != 1) && (x[3] > lp0), state_matrix.transitions)
+    if isempty(tt)
+        return StateMatrix(), Int64[]
+    end
+    #get the state we transition to
+    idx = [_tt[2] for _tt in tt]
+    #get the active templates for these states
+    tidx = Array{Int64}(length(idx))
+    for (i,ix) in enumerate(idx)
+        for j in 1:size(state_matrix.states,1)
+            if state_matrix.states[j,ix] == 2
+                tidx[i] == j
+                break
+            end
+        end
+    end
+    lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
+    lA, tidx
+end
+
+function remove_small(state_matrix::StateMatrix, mu::Matrix{Float64}, sigma::Float64, data::AbstractVector{T};theshold=4.0) where T<: Real
+    een = get_noise_energy(data, 1.0/sigma, nstates) 
+    remove_small(state_matrix, mu, sigma, een;threshold=threshold)
+end
+
+function remove_small(state_matrix::StateMatrix, mu::Matrix{Float64}, sigma::Float64, ee::Float64;threshold=4)
+    nstates = size(mu,1)
+    eef = get_noise(mu, 1.0/sigma)
+    tidx = find(q->q>threshold*ee,eef)
+    lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
+    lA, tidx
 end

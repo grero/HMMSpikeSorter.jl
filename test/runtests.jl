@@ -26,5 +26,15 @@ function test_viterbi()
     1-std(Y-S)./std(S)
 end
 
-aa = test_viterbi()
-@test aa ≈ 0.5753193438558597
+@testset "Viterbi" begin
+    aa = test_viterbi()
+    @test aa ≈ 0.5753193438558597
+end
+
+@testset "Unroll" begin
+    state_matrix = HMMSpikeSorter.StateMatrix(2,5,log.([0.01, 0.004]))
+    mlseq = Int16[1 1 1 2 3 4 5 1 6 7 8 9 1 10 15 20 25 1][:]
+    _mlseq = HMMSpikeSorter.unroll_mlseq(mlseq, state_matrix)
+    @test _mlseq[1,:] == [1,1,1,2,3,4,5,1,1,1,1,1,1,2,3,4,5,1]
+    @test _mlseq[2,:] == [1,1,1,1,1,1,1,1,2,3,4,5,1,2,3,4,5,1]
+end

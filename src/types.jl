@@ -1,5 +1,5 @@
 type StateMatrix
-    states::Array{Int16,2}
+    states::Matrix{Int16}
     transitions::Array{Tuple{Int64,Int64,Float64},1}
     π::Array{Float64,1}
     K::Int64 #number of neurons
@@ -7,6 +7,10 @@ type StateMatrix
     nstates::Int64
     resolve_overlaps::Bool
 end
+
+# The null model is one containing a single noise state.
+StateMatrix() = StateMatrix(ones(1,1), [(1,1,0.0)], [1.0], 0, 0, 1, false)
+Base.isempty(state_matrix::StateMatrix) = isempty(state_matrix.states)
 
 type HMMSpikeTemplateModel
     state_matrix::StateMatrix
@@ -19,6 +23,10 @@ type HMMSpikingModel
     ml_seq::Array{Int16,1}
     ll::Float64
     y::Array{Float64,1}
+end
+
+function HMMSpikingModel(template_model::HMMSpikeTemplateModel, N::Int64)
+    HMMSpikingModel(template_model, zeros(Int16, N), 0.0, zeros(N))
 end
 
 StatsBase.loglikelihood(model::HMMSpikingModel) = model.ll
@@ -146,8 +154,13 @@ end
 Create a new HMMSpikeTemplateModel with templates `idx`. Optionally, alllow these templates to overlap by setting `resolve_overlaps` to `true`.
 """
 function prune_templates(templates::HMMSpikeTemplateModel, idx::AbstractArray{Int64,1},resolve_overlaps=true)
-    lp, tidx = get_lp(templates.state_matrix)
-    N = length(idx)
-    lA = StateMatrix(N, templates.state_matrix.K, lp[findin(tidx,idx)],resolve_overlaps)
+    lA = prune_templates(templates.state_matrix, idx, resolve_overlaps)
     HMMSpikeTemplateModel(lA, templates.μ[:,idx], templates.σ)
+end
+
+function prune_templates(state_matrix::StateMatrix, idx::AbstractVector{Int64}, resolve_overlaps=true)
+    lp, tidx = get_lp(state_matrix)
+    N = length(idx)
+    lA = StateMatrix(N, state_matrix.K, lp[findin(tidx,idx)],resolve_overlaps)
+    lA
 end

@@ -1,14 +1,14 @@
-function StatsBase.fit(::Type{HMMSpikingModel}, X::Array{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
+function StatsBase.fit(::Type{HMMSpikingModel}, X::AbstractVector{Float64}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
     templates = fit(HMMSpikeTemplateModel, X, N, K, nsteps, resolve_overlaps, callback)
     fit(HMMSpikingModel, templates, X, callback)
 end
 
-function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  callback::Function=x->nothing;kvs...)
+function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::AbstractVector{Float64},  callback::Function=x->nothing;kvs...)
     x,ll = viterbi(X, templates.state_matrix, templates.μ, templates.σ)
     HMMSpikingModel(templates, x,ll,X)
 end
 
-function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::Array{Float64,1},  chunksize::Integer, callback::Function=x->nothing)
+function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel, X::AbstractVector{Float64},  chunksize::Integer, callback::Function=x->nothing)
     i = 1
     j = 1
     n = length(X)
@@ -41,12 +41,11 @@ function StatsBase.fit(::Type{HMMSpikingModel}, templates::HMMSpikeTemplateModel
     HMMSpikingModel(templates, ml_seq, ll, X)
 end
 
-function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::Array{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing;kvs...)
-    lA, μ, σ = train_model(X, N, K, resolve_overlaps, nsteps, callback;kvs...)
-    HMMSpikeTemplateModel(lA, μ, σ)
+function StatsBase.fit(::Type{HMMSpikeTemplateModel}, X::AbstractArray{Float64,1}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing;kvs...)
+    train_model(X, N, K, resolve_overlaps, nsteps, callback;kvs...)
 end
 
-function StatsBase.fit(model::HMMSpikeTemplateModel, X::AbstractArray{Float64,1}, nsteps, callback)
+function StatsBase.fit!(model::HMMSpikeTemplateModel, X::AbstractArray{Float64,1}, nsteps, callback::Function=x->nothing)
     lA, μ, σ = train_model(X, model.state_matrix, model.μ, model.σ, nsteps,callback)
     HMMSpikeTemplateModel(lA, μ, σ)
 end
