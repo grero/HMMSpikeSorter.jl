@@ -427,6 +427,7 @@ function condense_templates(templates::HMMSpikeTemplateModel, α=0.05)
         for i2 in i1+1:N
             #align templates
             #compute θ = sum((t1-t2)Y2/σ
+            #merge if the difference is comptabible with noise
         end
     end
 end
