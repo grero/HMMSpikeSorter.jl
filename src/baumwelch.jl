@@ -26,6 +26,13 @@ function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
     T = length(V)
     nstates = lA.nstates
     a = fill(-Inf,nstates, T)
+    forward!(a, V,LA, μ, σ) 
+    a
+end
+
+function forward!(a::AbstractMatrix{Float64}, V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
+    T = length(V)
+    nstates = lA.nstates
     _μ = zeros(nstates)
     for i in 1:nstates
         a[i,1] = lA.π[i]
@@ -47,7 +54,7 @@ function forward(V::Array{Float64,1}, lA::StateMatrix, μ::Array{Float64,2}, σ:
             a[j,i] = logsumexpl(a[j,i], a[k,i-1] + lp + b)
         end
     end
-    a
+    nothing
 end
 
 function backward(V::Array{Float64,1},lA::Array{Float64,2}, μ::Array{Float64,1}, σ::Float64)
@@ -73,10 +80,17 @@ end
 function backward(V::Array{Float64,1},lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
     T = length(V)
     nstates = lA.nstates
+    a = fill(-Inf, nstates, T)
+    backward!(a, V, lA, μ, σ)
+    a
+end
+
+function backward!(a::AbstractMatrix{Float64}, V::Array{Float64,1},lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
+    T = length(V)
+    nstates = lA.nstates
     K = lA.K
     N = lA.N
     states = lA.states
-    a = fill(-Inf, nstates, T)
     a[:,T] = 0.0
     _μ = zeros(nstates)
     for j in 1:nstates
@@ -326,13 +340,21 @@ function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nstep
 end
 
 function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Float64, nsteps::Integer,callback::Function=x->nothing;verbose::Integer=1)
+    T = length(X)
+    nstates = lA.nstates
+    f1 = tempfile()
+    f2 = tempfile()
+    a = Mmap.mmap(f1, Matrix{Float64}, (nstates, T))
+    fill!(a, -Inf)
+    b = Mmap.mmap(f2, Matrix{Float64}, (nstates, T))
+    fill!(b, -Inf)
 	for i in 1:nsteps
         if verbose > 0
             print("$i ")
         end
         callback(μ)
         yield()
-		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ;verbose=verbose)
+		state_matrix, μ, σ = train_model!(a, b, X, state_matrix, μ, σ;verbose=verbose)
         if isempty(state_matrix)
             break
         end
@@ -350,10 +372,18 @@ function train_model_old(X,pp0, aa0, μ0, σ0)
 end
 
 function train_model(X::Array{Float64,1},state_matrix::StateMatrix, μ0::Array{Float64,2}, σ0::Float64;verbose=0)
+    L = length(X)
+    nstates = state_matrix.nstates
+    a = fill(-Inf, nstates, T)
+    b = fill(-Inf, nstates, T)
+    train_model!(a,b,X,state_matrix, μ0, σ0;verbose=verbose)
+end
+
+function train_model!(a::Matrix{Float64}, b::Matrix{Float64}, X::Array{Float64,1},state_matrix::StateMatrix, μ0::Array{Float64,2}, σ0::Float64;verbose=0)
     verbose > 0 && println("Running forward algorithm...")
-	α = forward(X, state_matrix, μ0, σ0)
+	α = forward(a, X, state_matrix, μ0, σ0)
     verbose > 0 && println("Running backward algorithm...")
-	β = backward(X, state_matrix, μ0, σ0)
+	β = backward(b, X, state_matrix, μ0, σ0)
     verbose > 0 && println("Running update algorithm...")
 	state_matrix,μ,σ = update(α, β, state_matrix, μ0, σ0, X)
     verbose > 0 && println("Removing sparse templates...")
