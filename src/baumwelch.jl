@@ -342,8 +342,8 @@ end
 function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Float64, nsteps::Integer,callback::Function=x->nothing;verbose::Integer=1)
     T = length(X)
     nstates = state_matrix.nstates
-    f1 = tempfile()
-    f2 = tempfile()
+    f1 = tempname()
+    f2 = tempname()
     a = Mmap.mmap(f1, Matrix{Float64}, (nstates, T))
     fill!(a, -Inf)
     b = Mmap.mmap(f2, Matrix{Float64}, (nstates, T))
