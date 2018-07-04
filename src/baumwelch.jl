@@ -318,7 +318,7 @@ function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nstep
     μ = ones(K,N)
     σ = std(X)
     for i in 1:N
-        μ[:,i] = create_spike_template(K, σ*rand(), rand(), rand())
+        μ[:,i] = create_spike_template(K, 3*σ*rand(), 0.5+0.1*randn(), 1.5*rand())
     end
     #μ = exp(rand(K,N))
     μ[1,:] = 0.0 #all neurons must start from silence
