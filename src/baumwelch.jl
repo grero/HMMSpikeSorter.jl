@@ -530,6 +530,34 @@ function find_best_overlap(μ::Matrix{Float64}, i1::Int64, i2::Int64)
 end
 
 """
+Match the templates from `temps1` to those in `temps2` by comparing sum of pointwise square differences at the optimum alignment 
+"""
+function match_templates(temps1::Matrix{Float64}, temps2::Matrix{Float64})
+    K1,N1 = size(temps1)
+    K2,N2 = size(temps2)
+    K1 == K2 || throw(ArgumentError("The two template sets must have the same number of states"))
+    K = K1
+    mm = fill(0,N1)
+    cc = fill(0.0, N1)
+    for i1 in 1:N1
+        m = Inf
+        mi = 0
+        for i2 in 1:N2
+            #FIXME: Don't concatenate here
+            xi,xm = find_best_overlap(cat(2,temps1[:,i1], temps2[:,i2]), 1,2)
+            xm  = sum(abs2, temps1[xi[1],i1]-temps2[xi[2],i2])
+            if xm < m
+                m = xm
+                mi = i2
+            end
+        end
+        mm[i1] = mi
+        cc[i1] = m
+    end
+    mm, cc
+end
+
+"""
 Remove templates associated with very low firing rate.
 """
 function remove_sparse(state_matrix::StateMatrix, lp0=-70.0)

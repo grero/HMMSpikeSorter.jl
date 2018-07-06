@@ -57,3 +57,11 @@ end
     @test overlap_idx[1] == 1:56
     @test overlap_idx[2] == 5:60
 end
+
+@testset "match templates" begin
+    μ = [[1.0] [2.0] [3.0];[1.0] [2.0] [3.0]]'
+    μ[:,1] .*= 1.3
+    xi, xm = HMMSpikeSorter.match_templates(μ, μ)
+    @test xi == [1,2]
+    @test xm ≈ [0.0, 0.0]
+end
