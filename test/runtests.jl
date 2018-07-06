@@ -40,13 +40,17 @@ end
 end
 
 @testset "overlap and combine" begin
+    μ = [[1.0] [2.0] [3.0];[1.0] [2.0] [3.0]]'
+    xi,xm = HMMSpikeSorter.find_best_overlap(μ, 1,2)
+    @test xi == (1:3, 1:3)
+    @test xm ≈ 14.0
     temp1 = HMMSpikeSorter.create_spike_template(60,3.0, 0.8, 0.2)
     t2 = zeros(temp1)
     t2[:5:end] = temp1[1:56]
     xi,xm = HMMSpikeSorter.find_best_overlap(cat(2,temp1,t2),1,2)
     @test xi[1] == 1:56
     @test xi[2] == 5:60
-    @test xm ≈ 1.0
+    @test xm ≈ 100.66411692920131
 
     candidates, test_stat, overlap_idx = HMMSpikeSorter.condense_templates(cat(2,temp1, t2), 0.1)
     @test candidates == (1,2)

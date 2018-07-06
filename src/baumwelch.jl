@@ -521,7 +521,6 @@ function find_best_overlap(μ::Matrix{Float64}, i1::Int64, i2::Int64)
             y1 += μ[k1,i1]^2
             y2 += μ[k2,i2]^2
         end
-        x = x/sqrt(y1*y2)
         if x > xm
             xm = x
             xi = shift
