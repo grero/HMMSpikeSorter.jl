@@ -38,3 +38,13 @@ end
     @test _mlseq[1,:] == [1,1,1,2,3,4,5,1,1,1,1,1,1,2,3,4,5,1]
     @test _mlseq[2,:] == [1,1,1,1,1,1,1,1,2,3,4,5,1,2,3,4,5,1]
 end
+
+@testset "overlap and combine" begin
+    temp1 = HMMSpikeSorter.create_spike_template(60,3.0, 0.8, 0.2)
+    t2 = zeros(temp1)
+    t2[:5:end] = temp1[1:56]
+    xi,xm = HMMSpikeSorter.find_best_overlap(cat(2,temp1,t2),1,2)
+    @test xi[1] == 1:56
+    @test xi[2] == 5:60
+    @test xm ≈ 1.0
+end
