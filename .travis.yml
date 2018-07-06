@@ -1,4 +1,7 @@
 language: julia
+addons:
+    apt:
+        update: true
 julia:
       - release
 after_success:
