@@ -431,15 +431,103 @@ function remove_small(templates::HMMSpikeTemplateModel, α=0.05,resolve_overlaps
 end
 
 function condense_templates(templates::HMMSpikeTemplateModel, α=0.05)
-    N = templates.state_matrix.N
-    K = templates.state_matrix.K
+    μ = templates.μ
+    K,N = size(μ)
+    σ² = templates.σ^2
+    condense_templates(templates.state_matrix, μ, σ, α)
+end
+
+function condense_templates(state_matrix::StateMatrix, μ::Matrix{Float64}, σ::Float64, α::Float64=0.05;verbose=0)
+    σ² = σ^2
+    lp,_idx = get_lp(state_matrix)
+    K,N = size(μ)
+    candidates, test_stat, overlap_idx = condense_templates(μ, σ², α)
+    while !isempty(candidates)
+        i1,i2 = candidates
+        xi1, xi2 = overlap_idx
+        if verbose > 1
+            println("Merging templates $i1 and $i2 with Χ² statistic $test_stat")
+        end
+        N -= 1
+        μ_new = zeros(K,N)
+        lp_new = zeros(N)
+        kk = 1
+        μ_new[xi1,kk] = 0.5.*μ[xi1,i1]
+        μ_new[xi2, kk] .=+ 0.5*μ[xi2,i2]
+        lp_new[1] = log(0.5*exp(lp[i1]) + 0.5*exp(lp[i2]))
+        idx = setdiff(1:N,[i1,i2])
+        for (ii,jj) in enumerate(idx)
+            μ_new[:,kk+ii] = μ[:,jj]
+            lp_new[kk+ii] = lp[jj]
+        end
+        lp = lp_new
+        μ = μ_new
+        candidates, test_stat, overlap_idx = condense_templates(μ, σ², α)
+    end
+    if N < state_matrix.N
+        state_matrix_new = StateMatrix(N, K, lp, state_matrix.resolve_overlaps) 
+        return state_matrix_new, μ
+    end
+    return state_matrix, μ
+end
+
+function condense_templates(μ::Matrix{Float64}, σ²::Real, α=0.05)
+    K,N = size(μ)
+    candidates = Vector{Tuple{Int64,Int64}}(0)
+    test_stat = Float64[]
+    overlap_idx = Vector{NTuple{2, UnitRange{Int64}}}(0)
     for i1 in 1:N-1
         for i2 in i1+1:N
-            #align templates
+            xi,xm = find_best_overlap(μ, i1,i2)
+            x = 0.0
+            for (k1,k2) in zip(xi...)
+                x += abs2(μ[k1,i1]-μ[k2,i2])
+            end
+            x /= σ²
+            #FIXME: This isn't really true...
+            pval = 1-cdf(Chisq(length(xi[1])-1),x)
+            if pval > α #merge if the distance is compatible with noise
+                push!(candidates, (i1,i2))
+                push!(test_stat, x)
+                push!(overlap_idx, xi)
+            end
             #compute θ = sum((t1-t2)Y2/σ
             #merge if the difference is comptabible with noise
         end
     end
+    #merge the most similar templates first
+    if !isempty(candidates)
+        merge_idx = indmax(test_stat)
+        return candidates[merge_idx], test_stat[merge_idx], overlap_idx[merge_idx] 
+    end
+    return candidates, test_stat, overlap_idx
+end
+
+"""
+Finds the best overlap between templates indexed by `i1` and `i2`.
+"""
+function find_best_overlap(μ::Matrix{Float64}, i1::Int64, i2::Int64)
+    K,N = size(μ)
+    xi = (1:K, 1:K)
+    xm = -Inf 
+    shifts = [(1:s, K-s+1:K) for s in 1:K]
+    append!(shifts, [(1+s:K, 1:K-s) for s in 1:K-1])
+    for shift in shifts
+        x = 0.0
+        y1 = 0.0
+        y2 = 0.0
+        for (k1,k2) in zip(shift...)
+            x += μ[k1,i1]*μ[k2,i2]
+            y1 += μ[k1,i1]^2
+            y2 += μ[k2,i2]^2
+        end
+        x = x/sqrt(y1*y2)
+        if x > xm
+            xm = x
+            xi = shift
+        end
+    end
+    xi,xm
 end
 
 """
