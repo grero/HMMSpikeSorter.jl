@@ -66,3 +66,17 @@ end
     @test xi == [1,2]
     @test xm ≈ [0.0, 0.0]
 end
+
+@testset "Baum-Welch" begin
+    rng = MersenneTwister(UInt32(1234))
+    temp1 = HMMSpikeSorter.create_spike_template(60,3.0, 0.8, 0.2)
+    temp2 = HMMSpikeSorter.create_spike_template(60,4.0, 0.3, 0.2)
+    temps = cat(2, temp1, temp2)
+    pp = [0.003, 0.001]
+    S = HMMSpikeSorter.create_signal(30_000, 0.3, pp, temps;rng=rng)
+    templates = StatsBase.fit(HMMSpikeSorter.HMMSpikeTemplateModel, S, 7)
+    @test size(templates[2],2) == 2
+    midx, ms = HMMSpikeSorter.match_templates(temps, templates[2])
+    @test ms[1]/sum(abs2, temps[:,1]) < 0.01
+    @test ms[2]/sum(abs2, temps[:,2]) < 0.01
+end
