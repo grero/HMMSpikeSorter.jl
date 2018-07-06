@@ -47,4 +47,9 @@ end
     @test xi[1] == 1:56
     @test xi[2] == 5:60
     @test xm ≈ 1.0
+
+    candidates, test_stat, overlap_idx = HMMSpikeSorter.condense_templates(cat(2,temp1, t2), 0.1)
+    @test candidates == (1,2)
+    @test overlap_idx[1] == 1:56
+    @test overlap_idx[2] == 5:60
 end
