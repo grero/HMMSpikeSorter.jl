@@ -53,15 +53,15 @@ function create_spike_template(nstates::Integer, a::Real, b::Real, c::Real)
     return y
 end
 
-function create_signal(N::Integer, sigma::Number, pp::Array{Float64,1}, templates::Array{Float64,2})
+function create_signal(N::Integer, sigma::Number, pp::Array{Float64,1}, templates::Array{Float64,2};rng=MersenneTwister(rand(UInt32)))
     nstates,ncells = size(templates)
     state = zeros(Int64, ncells)
-    S = rand(Normal(0,sigma),N)
+    S = sigma.*randn(rng, N) 
     active_cell = 0
     for i in 1:length(S)
         if active_cell == 0
             for j in 1:ncells
-                r = rand()
+                r = rand(rng)
                 if pp[j] > r
                     state[j] = 1
                     active_cell = j
