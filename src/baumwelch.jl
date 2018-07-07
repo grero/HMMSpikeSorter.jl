@@ -336,7 +336,21 @@ function train_model(X,state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Floa
     if verbose > 0
         println()
     end
-	state_matrix, μ, σ
+    #TODO: Merge templates that are similar first
+    state_matrix, μ = condense_templates(state_matrix, μ, σ, 0.05;verbose=verbose)
+    verbose > 0 && println("$(size(μ,2)) templates remain after merging")
+    #prune
+    verbose > 0 && println("Removing sparse templates...")
+    state_matrix, idx = remove_sparse(state_matrix)
+    verbose > 0 && println("$(length(idx)) templates remain after removing sparse")
+    verbose > 0 && println("Removing small templates...")
+    state_matrix, idx2 = remove_small(state_matrix, μ[:,idx], σ, StatsBase.PValue(0.05))
+    verbose > 0 && println("$(length(idx2)) templates remain after removing small templates")
+    μ = μ[:,idx[idx2]]
+    for i in 1:div(nsteps,2)
+		state_matrix, μ, σ = train_model(X, state_matrix, μ, σ;verbose=verbose)
+    end
+    state_matrix, μ, σ
 end
 
 function train_model_old(X,pp0, aa0, μ0, σ0)
@@ -352,11 +366,7 @@ function train_model(X::Array{Float64,1},state_matrix::StateMatrix, μ0::Array{F
 	β = backward(X, state_matrix, μ0, σ0)
     verbose > 0 && println("Running update algorithm...")
 	state_matrix,μ,σ = update(α, β, state_matrix, μ0, σ0, X)
-    verbose > 0 && println("Removing sparse templates...")
-    state_matrix, idx = remove_sparse(state_matrix)
-    verbose > 0 && println("Removing small templates...")
-    state_matrix, idx2 = remove_small(state_matrix, μ[:,idx], σ, StateBase.PValue(0.05))
-    state_matrix,  μ[:,idx[idx2]], σ
+    state_matrix,  μ, σ
 end
 
 function decode()
