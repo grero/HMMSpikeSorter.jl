@@ -490,8 +490,12 @@ function condense_templates(μ::Matrix{Float64}, σ²::Real, α=0.05)
                 x += abs2(μ[k1,i1]-μ[k2,i2])
             end
             x /= σ²
-            #FIXME: This isn't really true...
-            pval = 1-cdf(Chisq(length(xi[1])-1),x)
+            #heuristic; if fewer than 5 points match, do not consider this a match
+            if length(xi[1]) < 5
+                pval = 0.0
+            else
+                pval = 1-cdf(Chisq(length(xi[1])-1),x)
+            end
             if pval > α #merge if the distance is compatible with noise
                 push!(candidates, (i1,i2))
                 push!(test_stat, x)
