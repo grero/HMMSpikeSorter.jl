@@ -425,7 +425,7 @@ function remove_small(state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Float
     σ2 = σ.*σ
     Z = sum(μ.^2,1)./σ2
     #use the fact that Z is Χ² distributed with n-1 degress of freedom
-    pvals = 1-cdf(Chisq(nstates-1),Z)
+    pvals = 1-cdf.(Chisq(nstates-1),Z)
     tidx = find(pvals .< α.v)
     lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
     lA, tidx
