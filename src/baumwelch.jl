@@ -570,7 +570,7 @@ end
 """
 Remove templates associated with very low firing rate.
 """
-function remove_sparse(state_matrix::StateMatrix, lp0=-70.0)
+function remove_sparse(state_matrix::StateMatrix, lp0=-70.0;verbose=1)
     tt = filter(x->(x[1]==1) && (x[2] != 1) && (x[3] > lp0), state_matrix.transitions)
     if isempty(tt)
         return StateMatrix(), Int64[]
