@@ -578,11 +578,11 @@ function remove_sparse(state_matrix::StateMatrix, lp0=-70.0;verbose=1)
     #get the state we transition to
     idx = [_tt[2] for _tt in tt]
     #get the active templates for these states
-    tidx = Array{Int64}(length(idx))
+    tidx = Int64[]
     for (i,ix) in enumerate(idx)
         for j in 1:size(state_matrix.states,1)
             if state_matrix.states[j,ix] == 2
-                tidx[i] == j
+                push!(tidx, j)
                 break
             end
         end
