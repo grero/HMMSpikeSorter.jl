@@ -308,13 +308,9 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     lA_new, μ, σ
 end
 
-function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=8,callback::Function=x->nothing;verbose::Integer=1,p0=2.0^(-3*K/2))
+function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=8,callback::Function=x->nothing;verbose::Integer=0,p0=2.0^(-3*K/2))
     lp = log.(fill(p0, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
-    #
-    if verbose > 0
-        @show state_matrix.nstates
-    end
     μ = ones(K,N)
     σ = std(X)
     for i in 1:N
