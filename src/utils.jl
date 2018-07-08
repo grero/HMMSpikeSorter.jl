@@ -91,10 +91,10 @@ end
 """
 Estimate the noise energy of data by computing the normalized energy in `nsamples` random patches of length `nstates`.
 """
-function get_noise_energy(data::AbstractVector{T1}, cinv::T2, nstates::Int64, nsamples=1000) where T1 <: Real where T2 <: Real
+function get_noise_energy(data::AbstractVector{T1}, cinv::T2, nstates::Int64, nsamples=1000;rng=MersenneTwister(rand(UInt32))) where T1 <: Real where T2 <: Real
     N = length(data)
     samples = zeros(nsamples)
-    idx = rand(1:N-nstates, nsamples)
+    idx = rand(rng, 1:N-nstates, nsamples)
     sort!(idx)
     for i in 1:nsamples
         @inbounds ii = idx[i]
