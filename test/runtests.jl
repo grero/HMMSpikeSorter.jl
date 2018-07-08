@@ -80,3 +80,14 @@ end
     @test ms[1]/sum(abs2, temps[:,1]) < 0.01
     @test ms[2]/sum(abs2, temps[:,2]) < 0.01
 end
+
+@testset "Noise energy" begin
+    rng = MersenneTwister(UInt32(1234))
+    temp1 = HMMSpikeSorter.create_spike_template(60,3.0, 0.8, 0.2)
+    temp2 = HMMSpikeSorter.create_spike_template(60,4.0, 0.3, 0.2)
+    temps = cat(2, temp1, temp2)
+    pp = [0.003, 0.001]
+    S = HMMSpikeSorter.create_signal(30_000, 0.3, pp, temps;rng=rng)
+    EE = HMMSpikeSorter.get_noise_energy(S, 1.0/(0.3*0.3), 60;rng=rng)
+    @test EE ≈ 66.21802573239852
+end
