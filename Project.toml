@@ -1,7 +1,7 @@
 name = "HMMSpikeSorter"
 uuid = "fb497093-afe7-4802-8915-3c903c4c8e82"
 authors = ["Roger Herikstad <roger.herikstad@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
