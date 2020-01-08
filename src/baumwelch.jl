@@ -77,7 +77,7 @@ function backward(V::Array{Float64,1},lA::StateMatrix, μ::Array{Float64,2}, σ:
     N = lA.N
     states = lA.states
     a = fill(-Inf, nstates, T)
-    a[:,T] = 0.0
+    a[:,T] .= 0.0
     _μ = zeros(nstates)
     for j in 1:nstates
         for l in 1:N
@@ -223,7 +223,7 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
 		end
 	end
     #update transition matrix; the only non-determnisitc transitions are from noise (state 0) to active for each neuron
-    tidx = find(q->q[1]==1, lA.transitions) #all transitions out of state 1
+    tidx = findall(q->q[1]==1, lA.transitions) #all transitions out of state 1
     #Note: we can also have all neurons transitioning from silence to active
     ξ = zeros(length(tidx), length(x)-1)
     for t in 1:length(x)-1
@@ -261,12 +261,12 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     end
     #update the transition matrix with the new transitions
     pp = γf[:,1]
-    xb = xx-bb
-    lA_new = StateMatrix(lA.states-one(Int16), pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
-	_σ = zeros(μ)
-    gg = zeros(μ)
+    xb = xx .- bb
+    lA_new = StateMatrix(lA.states .- one(Int16), pp, K, xb[2:end];allow_overlaps=lA.resolve_overlaps)
+	_σ = fill!(similar(μ), 0.0)
+	gg = fill!(similar(μ), 0.0)
     fill!(μ, 0.0)
-    sidx = find(sum(lA.states.>=2,1).==1) #find states with only one active neuron
+	sidx = findall(dropdims(sum(lA.states.>=2,dims=1),dims=1).==1) #find states with only one active neuron
     for t in 1:length(x)
         _x = x[t]
         for j in sidx
@@ -317,7 +317,7 @@ function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nstep
         μ[:,i] = create_spike_template(K, 3*σ*rand(), 0.5+0.1*randn(), 1.5*rand())
     end
     #μ = exp(rand(K,N))
-    μ[1,:] = 0.0 #all neurons must start from silence
+    μ[1,:] .= 0.0 #all neurons must start from silence
     train_model(X, state_matrix, μ, σ, nsteps, callback;verbose=verbose)
 end
 
@@ -374,8 +374,8 @@ end
 
 
 function prepA(p,n)
-    A = log.(zeros(n,n))
-    A[1,1] = log(1.-p)
+    A = log.(fill(0.0, n,n))
+    A[1,1] = log(1 .- p)
     A[1,2] = log(p)
     for i=2:n-1
         A[i,i+1] = 0
@@ -423,10 +423,10 @@ Removes templates from `μ` that are significantly not different from noise at a
 function remove_small(state_matrix::StateMatrix, μ::Array{Float64,2}, σ::Float64,  α::StatsBase.PValue=StateBase.Pvalue(0.05))
     nstates = size(μ,1)
     σ2 = σ.*σ
-    Z = sum(μ.^2,1)./σ2
+	Z = dropdims(sum(μ.^2,dims=1),dims=1)./σ2
     #use the fact that Z is Χ² distributed with n-1 degress of freedom
-    pvals = 1-cdf.(Chisq(nstates-1),Z)
-    tidx = find(pvals .< α.v)
+    pvals = 1 .- cdf.(Chisq(nstates-1),Z)
+    tidx = findall(pvals .< α.v)
     lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
     lA, tidx
 end
@@ -479,9 +479,9 @@ end
 
 function condense_templates(μ::Matrix{Float64}, σ²::Real, α=0.05)
     K,N = size(μ)
-    candidates = Vector{Tuple{Int64,Int64}}(0)
+	candidates = Tuple{Int64,Int64}[]
     test_stat = Float64[]
-    overlap_idx = Vector{NTuple{2, UnitRange{Int64}}}(0)
+	overlap_idx = NTuple{2, UnitRange{Int64}}[]
     for i1 in 1:N-1
         for i2 in i1+1:N
             xi,xm = find_best_overlap(μ, i1,i2)
@@ -507,7 +507,7 @@ function condense_templates(μ::Matrix{Float64}, σ²::Real, α=0.05)
     end
     #merge the most similar templates first
     if !isempty(candidates)
-        merge_idx = indmax(test_stat)
+        merge_idx = argmax(test_stat)
         return candidates[merge_idx], test_stat[merge_idx], overlap_idx[merge_idx] 
     end
     return candidates, test_stat, overlap_idx
@@ -554,7 +554,7 @@ function match_templates(temps1::Matrix{Float64}, temps2::Matrix{Float64})
         mi = 0
         for i2 in 1:N2
             #FIXME: Don't concatenate here
-            xi,xm = find_best_overlap(cat(2,temps1[:,i1], temps2[:,i2]), 1,2)
+            xi,xm = find_best_overlap(cat(temps1[:,i1], temps2[:,i2],dims=2), 1,2)
             xm  = sum(abs2, temps1[xi[1],i1]-temps2[xi[2],i2])
             if xm < m
                 m = xm
@@ -599,7 +599,7 @@ end
 function remove_small(state_matrix::StateMatrix, mu::Matrix{Float64}, sigma::Float64, ee::Float64;threshold=4)
     nstates = size(mu,1)
     eef = get_noise(mu, 1.0/sigma)
-    tidx = find(q->q>threshold*ee,eef)
+    tidx = findall(q->q>threshold*ee,eef)
     lA = prune_templates(state_matrix, tidx, state_matrix.resolve_overlaps)
     lA, tidx
 end

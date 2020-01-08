@@ -1,10 +1,9 @@
-__precompile__()
-
 module HMMSpikeSorter
 using StatsBase
 using FileIO
 using MAT
 using ProgressMeter
+using Printf
 import FileIO.save
 import StatsBase.fit, StatsBase.predict, StatsBase.loglikelihood, StatsBase.model_response, StatsBase.bic
 import Base.isempty
