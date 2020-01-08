@@ -31,7 +31,7 @@ function logsumexpl(xp,yp)
    return z
 end
 
-function logsumexpl{T<:Real}(X::Array{T,1},i=1)
+function logsumexpl(X::Array{T,1},i=1) where T <: Real
     n = length(X)
     if i == n-1 
         return logsumexpl(X[i], X[i+1]) 
@@ -48,8 +48,8 @@ end
 
 create_spike_template(nstates::Integer) = create_template(nstates, 1.0, 0.8, 0.2)
 function create_spike_template(nstates::Integer, a::Real, b::Real, c::Real)
-    x = linspace(0,1.5,nstates)
-    y = a*sin.(2*pi*x).*exp.(-(b-x).^2/c)
+    x = range(0.0,stop=1.5,length=nstates)
+    y = a*sin.(2*pi*x).*exp.(-(b .- x).^2/c)
     return y
 end
 
