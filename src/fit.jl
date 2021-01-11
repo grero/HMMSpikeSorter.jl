@@ -1,5 +1,5 @@
-function StatsBase.fit(::Type{HMMSpikingModel}, X::AbstractVector{Float64}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing)
-    templates = fit(HMMSpikeTemplateModel, X, N, K, nsteps, resolve_overlaps, callback)
+function StatsBase.fit(::Type{HMMSpikingModel}, X::AbstractVector{Float64}, N=3, K=60,nsteps=10,resolve_overlaps=false, callback::Function=x->nothing, kvs...)
+    templates = fit(HMMSpikeTemplateModel, X, N, K, nsteps, resolve_overlaps, callback;kvs...)
     fit(HMMSpikingModel, templates, X, callback)
 end
 
