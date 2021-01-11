@@ -1,4 +1,4 @@
-function reconstruct_signal{T<:Integer}(x::Array{T,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64)
+function reconstruct_signal(x::Array{T,1}, lA::StateMatrix, μ::Array{Float64,2}, σ::Float64) where T <: Integer
     Y2 = zeros(Float64, length(x))
     for i in 1:length(x)
         for j in 1:lA.N
