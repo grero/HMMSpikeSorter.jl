@@ -6,4 +6,4 @@ addons:
 julia:
       - release
 after_success:
-      - julia -e 'cd(Pkg.dir("HMMSpikeSorter")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+      - julia -e 'using Pkg;cd(Pkg.dir("HMMSpikeSorter")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
