@@ -1,4 +1,4 @@
-type StateMatrix
+struct StateMatrix
     states::Matrix{Int16}
     transitions::Array{Tuple{Int64,Int64,Float64},1}
     π::Array{Float64,1}
@@ -12,13 +12,13 @@ end
 StateMatrix() = StateMatrix(ones(1,1), [(1,1,0.0)], [1.0], 0, 0, 1, false)
 Base.isempty(state_matrix::StateMatrix) = isempty(state_matrix.states)
 
-type HMMSpikeTemplateModel
+struct HMMSpikeTemplateModel
     state_matrix::StateMatrix
     μ::Array{Float64,2}
     σ::Float64
 end
 
-type HMMSpikingModel
+struct HMMSpikingModel
     template_model::HMMSpikeTemplateModel
     ml_seq::Array{Int16,1}
     ll::Float64
@@ -45,7 +45,7 @@ function get_lp(lA::StateMatrix)
     k = 1
     for (i,qq) in enumerate(lA.transitions)
         if qq[1] == 1 && qq[2]>1
-            vidx =  find(lA.states[:,qq[2]].>1)
+            vidx =  findall(lA.states[:,qq[2]].>1)
             if length(vidx) == 1 #only a single neuron active
                 lp[k] = qq[3]
                 lidx[k] = first(vidx)
@@ -113,7 +113,7 @@ function isvalid_transition(states,K,lp,j1,j2)
 end
 
 function get_valid_transitions(states::Array{Int16,2}, K,lp)
-    idx = Array{Tuple{Int64, Int64, Float64}}(0)
+    idx = Tuple{Int64, Int64, Float64}[]
     nstates = size(states,2)
     for i in 1:nstates
         for j in 1:nstates
@@ -147,7 +147,7 @@ end
 
 function StateMatrix(states::Array{Int16,2},pp::Array{Float64,1}, K,lp;allow_overlaps=true)
     transitions = get_valid_transitions(states,K,lp)
-    StateMatrix(states+1, transitions,pp, K,size(states,1),size(states,2),allow_overlaps)
+    StateMatrix(states .+ 1, transitions,pp, K,size(states,1),size(states,2),allow_overlaps)
 end
 
 """
@@ -161,6 +161,6 @@ end
 function prune_templates(state_matrix::StateMatrix, idx::AbstractVector{Int64}, resolve_overlaps=true)
     lp, tidx = get_lp(state_matrix)
     N = length(idx)
-    lA = StateMatrix(N, state_matrix.K, lp[findin(tidx,idx)],resolve_overlaps)
+    lA = StateMatrix(N, state_matrix.K, lp[findall(in(tidx),idx)],resolve_overlaps)
     lA
 end

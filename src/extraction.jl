@@ -27,7 +27,7 @@ function extract_units(model::HMMSpikingModel, channel::Integer;sampling_rate=40
     pidx = extract_spiketimes(model::HMMSpikingModel)
     units = Dict()
     for i in 1:length(pidx)
-        unit_name = @sprintf "g%03dc%02d_spiketrain.mat" channel i
+        unit_name = Printf.@sprintf "g%03dc%02d_spiketrain.mat" channel i
         units[unit_name] = Dict("timestamps" => pidx[i],
                                 "sampling_rate" => sampling_rate,
                                 "waveform" => model.template_model.μ[:,i])
