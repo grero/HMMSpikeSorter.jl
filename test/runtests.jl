@@ -75,9 +75,9 @@ end
     temps = cat(temp1, temp2, dims=2)
     pp = [0.003, 0.001]
     S = HMMSpikeSorter.create_signal(30_000, 0.3, pp, temps;rng=rng)
-    templates = StatsBase.fit(HMMSpikeSorter.HMMSpikeTemplateModel, S, 7;RNG=rng)
-    @test size(templates[2],2) == 2
-    midx, ms = HMMSpikeSorter.match_templates(temps, templates[2])
+    template_model = StatsBase.fit(HMMSpikeSorter.HMMSpikeTemplateModel, S, 7;RNG=rng)
+    @test size(template_model.μ,2) == 2
+    midx, ms = HMMSpikeSorter.match_templates(temps, template_model.μ)
     @test ms[1]/sum(abs2, temps[:,1]) < 0.01
     @test ms[2]/sum(abs2, temps[:,2]) < 0.01
 end
