@@ -30,7 +30,7 @@ end
 
 @testset "Viterbi" begin
     aa = test_viterbi()
-    @test aa ≈ 0.5642293153292788 
+    @test 0.55 < aa < 0.57
 end
 
 @testset "Unroll" begin
@@ -90,5 +90,5 @@ end
     pp = [0.003, 0.001]
     S = HMMSpikeSorter.create_signal(30_000, 0.3, pp, temps;rng=rng)
     EE = HMMSpikeSorter.get_noise_energy(S, 1.0/(0.3*0.3), 60;rng=rng)
-    @test EE ≈ 66.21802573239852
+    @test 66.0 < EE < 66.7
 end
