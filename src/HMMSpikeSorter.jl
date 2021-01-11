@@ -15,7 +15,6 @@ include("utils.jl")
 include("types.jl")
 include("baumwelch.jl")
 include("viterbi.jl")
-include("reconstruction.jl")
 include("fit.jl")
 include("extraction.jl")
 end #module
