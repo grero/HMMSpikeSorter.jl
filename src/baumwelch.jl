@@ -308,13 +308,13 @@ function update(α::Array{Float64,2}, β::Array{Float64,2}, lA::StateMatrix, μ:
     lA_new, μ, σ
 end
 
-function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=8,callback::Function=x->nothing;verbose::Integer=0,p0=2.0^(-3*K/2))
+function train_model(X,N::Integer=3,K::Integer=60, resolve_overlaps=false, nsteps::Integer=8,callback::Function=x->nothing;verbose::Integer=0,p0=2.0^(-3*K/2),RNG=MersenneTwister(rand(UInt32)))
     lp = log.(fill(p0, N))
     state_matrix = StateMatrix(N,K,lp, resolve_overlaps) 
     μ = ones(K,N)
     σ = std(X)
     for i in 1:N
-        μ[:,i] = create_spike_template(K, 3*σ*rand(), 0.5+0.1*randn(), 1.5*rand())
+        μ[:,i] = create_spike_template(K, 3*σ*rand(RNG), 0.5+0.1*randn(RNG), 1.5*rand(RNG))
     end
     #μ = exp(rand(K,N))
     μ[1,:] .= 0.0 #all neurons must start from silence
